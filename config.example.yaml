@@ -1,0 +1,85 @@
+project:
+  channel_name: "Your Channel Name"
+  output_dir: "output"
+  language: "hi"          # hi = Hindi/Hinglish content
+  timezone: "Asia/Kolkata"
+
+format:
+  mode: "short"            # short or long
+  width: 1080
+  height: 1920
+  fps: 30
+  target_duration_seconds: 32
+  clip_seconds: 5
+
+style:
+  # Top location/pin label. IMPORTANT: only use a specific place if the footage really is that place.
+  location_label: "RISHIKESH | UTTARAKHAND"
+  caption_font: "Noto Sans Devanagari"
+  location_font: "Noto Sans Devanagari"
+  caption_font_size: 76
+  location_font_size: 54
+  caption_margin_bottom: 240
+  location_margin_top: 95
+  use_location_pin: true
+
+content:
+  ideas_csv: "data/ideas.csv"
+  locations_csv: "data/locations.csv"
+  topic_index: 0
+  # If true and Ollama is running, generate a fresh script from the selected idea.
+  # If false, uses the built-in original script lines in data/ideas.csv.
+  use_ollama: false
+  lines_per_short: 5
+  forbidden_claims:
+    - "cure disease"
+    - "guaranteed miracle"
+    - "open third eye in 5 minutes"
+
+visuals:
+  source: "auto"   # auto (Pixabay + Pexels), pexels_or_local, pixabay_or_local, local_only
+  # Pixabay has noticeably more India-specific footage than Pexels; used first when both keys are set.
+  pixabay_queries:
+    - "Rishikesh Ganga India"
+    - "Varanasi ghat India"
+    - "Himalaya India mountains"
+    - "India temple travel"
+  pexels_queries:
+    - "Rishikesh Ganga river India vertical"
+    - "Ganges river India temple vertical"
+    - "Himalaya river meditation India vertical"
+  local_video_dir: "assets/videos"
+  downloads_dir: "assets/videos/pexels"
+  pixabay_downloads_dir: "assets/videos/pixabay"
+  max_downloads: 8
+  orientation: "portrait"
+
+music:
+  # Put a legitimate free track from Pixabay/Mixkit/YouTube Audio Library here.
+  # Leave blank for voice-only.
+  path: "assets/music/background.mp3"
+  volume: 0.11
+
+voice:
+  engine: "kokoro"
+  lang_code: "h"          # Kokoro: h=Hindi, a=US English, b=British English
+  voice_id: "hm_psi"      # Hindi: hf_alpha/hf_beta (female), hm_omega/hm_psi (male); hm_psi = deeper
+  speed: 0.85              # slower, more deliberate pace
+
+metadata:
+  hashtags:
+    - "#meditation"
+    - "#innerpeace"
+    - "#rishikesh"
+    - "#ganga"
+    - "#shorts"
+  category_id: "22"       # People & Blogs; consider 27 Education for educational guides.
+  made_for_kids: false
+  contains_synthetic_media: false # Set true if you use realistic AI-generated visuals/altered real scenes/voice imitation.
+
+upload:
+  enabled: false
+  privacy_status: "private"   # private/unlisted/public. Use private until API project is audited.
+  publish_at: ""              # ISO time, e.g. 2026-08-01T18:30:00+05:30; requires privacy_status=private
+  upload_thumbnail: true
+  upload_captions: true

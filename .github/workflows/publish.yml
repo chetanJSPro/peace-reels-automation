@@ -1,0 +1,87 @@
+name: Peace Reels 24x7 automation
+
+# Runs entirely on GitHub's free hosted runners — keeps posting even if the local PC is off.
+# Cadence: 2 videos/day at the two windows generally reported as highest-engagement for Indian
+# Shorts/Reels audiences (morning phone-check, evening wind-down). Cron is UTC; IST = UTC + 5:30.
+on:
+  schedule:
+    - cron: "0 2 * * *"   # 07:30 IST
+    - cron: "0 15 * * *"  # 20:30 IST
+  workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: peace-reels-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install system dependencies (ffmpeg, espeak-ng)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg espeak-ng
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Restore credentials from secrets
+        env:
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          YOUTUBE_CLIENT_SECRET_JSON: ${{ secrets.YOUTUBE_CLIENT_SECRET_JSON }}
+          YOUTUBE_TOKEN_JSON: ${{ secrets.YOUTUBE_TOKEN_JSON }}
+        run: |
+          mkdir -p youtube
+          printf '%s' "$YOUTUBE_CLIENT_SECRET_JSON" > youtube/client_secret.json
+          printf '%s' "$YOUTUBE_TOKEN_JSON" > youtube/token.json
+          {
+            echo "PIXABAY_API_KEY=$PIXABAY_API_KEY"
+            echo "PEXELS_API_KEY=$PEXELS_API_KEY"
+            echo "YOUTUBE_CLIENT_SECRETS=youtube/client_secret.json"
+            echo "YOUTUBE_TOKEN_FILE=youtube/token.json"
+          } > .env
+
+      - name: Generate video and upload to YouTube
+        id: gen
+        run: python src/generate.py --config config.yaml
+
+      - name: Commit topic-rotation state
+        run: |
+          git config user.name "peace-reels-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data/state.json
+          git diff --cached --quiet || git commit -m "Auto: advance topic rotation"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push
+
+      - name: Publish video as a GitHub Release asset (public URL for Instagram)
+        if: ${{ vars.INSTAGRAM_ENABLED == 'true' }}
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="short-$(basename "$(dirname "${{ steps.gen.outputs.video_file }}" )")"
+          gh release create "$tag" "${{ steps.gen.outputs.video_file }}" \
+            --title "$tag" --notes "Automated Peace Reels Short" --repo "${GITHUB_REPOSITORY}"
+          url=$(gh release view "$tag" --repo "${GITHUB_REPOSITORY}" --json assets -q '.assets[0].browser_download_url')
+          echo "public_video_url=$url" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to Instagram
+        if: ${{ vars.INSTAGRAM_ENABLED == 'true' }}
+        env:
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          PUBLIC_VIDEO_URL: ${{ steps.release.outputs.public_video_url }}
+        run: python src/instagram_uploader.py "${{ steps.gen.outputs.metadata_json }}" --config config.yaml --video-url "$PUBLIC_VIDEO_URL"

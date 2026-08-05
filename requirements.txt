@@ -1,0 +1,16 @@
+# Core automation
+requests>=2.32.0
+python-dotenv>=1.0.1
+PyYAML>=6.0.2
+Pillow>=10.4.0
+tqdm>=4.66.0
+numpy>=1.26.0
+soundfile>=0.12.1
+
+# Local, free/open TTS. Requires espeak-ng installed on the OS.
+kokoro>=0.9.4
+
+# Official YouTube upload automation (optional; only use after OAuth setup/API audit notes in README)
+google-api-python-client>=2.140.0
+google-auth-oauthlib>=1.2.1
+google-auth-httplib2>=0.2.0
