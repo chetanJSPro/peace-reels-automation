@@ -345,6 +345,74 @@ Important: Google states that videos uploaded through unverified API projects cr
 
 ---
 
+## 9a) Free 24x7 cloud automation (GitHub Actions)
+
+`.github/workflows/publish.yml` runs the whole pipeline on GitHub's free hosted runners on a
+schedule, so it keeps posting even when your PC is off. It generates a video, uploads it to
+YouTube, and (if Instagram is turned on) publishes it as a Reel too.
+
+Cadence: 2 videos/day at 07:30 and 20:30 IST — generally the two highest-engagement windows for
+Indian Shorts/Reels audiences (morning phone-check, evening wind-down). Edit the `cron:` lines in
+the workflow to change this (cron is UTC; IST = UTC + 5:30).
+
+### One-time setup
+
+1. Push this repo to GitHub. It should be **public** — Instagram's API can only fetch video from
+   a public URL, and the free Actions minutes are unlimited on public repos. This is safe: `.env`
+   and the `youtube/` folder (real credentials) are git-ignored and never enter the repo; every
+   secret lives only in GitHub's encrypted Actions secrets below.
+
+   ```bash
+   git remote add origin https://github.com/<you>/<repo>.git
+   git branch -M main
+   git push -u origin main
+   ```
+
+2. In the repo, go to **Settings → Secrets and variables → Actions** and add these **Secrets**:
+
+   | Secret | Value |
+   |---|---|
+   | `PIXABAY_API_KEY` | from `.env` |
+   | `PEXELS_API_KEY` | from `.env` |
+   | `YOUTUBE_CLIENT_SECRET_JSON` | full contents of `youtube/client_secret.json` |
+   | `YOUTUBE_TOKEN_JSON` | full contents of `youtube/token.json` |
+   | `IG_BUSINESS_ACCOUNT_ID` | only needed once Instagram is set up (below) |
+   | `IG_ACCESS_TOKEN` | only needed once Instagram is set up (below) |
+
+3. Test it: **Actions tab → Peace Reels 24x7 automation → Run workflow** (this is the
+   `workflow_dispatch` trigger — no need to wait for the schedule). Watch the logs for errors
+   before trusting the unattended schedule.
+
+4. `data/state.json` (topic rotation position) is committed back to the repo automatically after
+   every run, so the schedule never repeats the same idea twice in a row even across runs.
+
+## 9b) Instagram automation (official Graph API, no bots)
+
+Meta's Content Publishing API is the only ToS-compliant way to post Reels automatically. It
+needs real setup in Meta's own dashboard that only you can do (it requires your Facebook login):
+
+1. Convert (or create) an Instagram account to **Professional (Business or Creator)**, and link it
+   to a **Facebook Page** you control — required by the API, done inside the Instagram app under
+   Settings → Account type.
+2. Create an app at <https://developers.facebook.com/apps/> → add the **Instagram Graph API**
+   product.
+3. In Graph API Explorer (or via the app's token tool), generate a User/Page token with the
+   `instagram_basic`, `instagram_content_publish`, and `pages_show_list` permissions, then exchange
+   it for a **long-lived token** (~60 days; the short-lived one from Explorer expires in ~1 hour).
+   Meta's "Access Token Debugger" tool shows the expiry and lets you extend it.
+4. Get your Instagram Business Account ID: `GET /me/accounts` → note the Page ID → 
+   `GET /<page-id>?fields=instagram_business_account`.
+5. Add `IG_BUSINESS_ACCOUNT_ID` and `IG_ACCESS_TOKEN` as repo secrets (table above).
+6. Turn it on: **Settings → Secrets and variables → Actions → Variables tab** → add
+   `INSTAGRAM_ENABLED` = `true`. (It's a repo *variable*, not a secret, because the workflow needs
+   to check it before the job even starts.)
+
+Long-lived tokens expire (~60 days) and need refreshing — Meta doesn't offer a silent
+refresh-token flow like Google's for this token type, so you'll periodically need to regenerate
+and update the `IG_ACCESS_TOKEN` secret by hand.
+
+---
+
 ## 10) Monetization plan
 
 ### Phase 1 — first 30 days
