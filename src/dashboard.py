@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import threading
@@ -15,6 +16,7 @@ from utils import project_root
 ROOT = project_root()
 PYTHON = sys.executable  # dashboard.py is launched by the same venv python, so reuse it
 LOG_TAIL_LINES = 300
+VIDEOS_PER_RUN = 2  # click the desktop icon once -> 2 uploads, then this process exits itself
 
 app = Flask(__name__)
 
@@ -23,20 +25,45 @@ state = {
     "running": False,
     "started_at": None,
     "finished_at": None,
-    "last_result": None,  # "success" | "error" | None
+    "last_result": None,  # "success" | "partial" | "error" | None
     "last_error": None,
+    "progress": f"0/{VIDEOS_PER_RUN}",
 }
 log_lines: deque[str] = deque(maxlen=LOG_TAIL_LINES)
 
 
-def _run_job() -> None:
-    with state_lock:
-        state["running"] = True
-        state["started_at"] = time.time()
-        state["finished_at"] = None
-        state["last_result"] = None
-        state["last_error"] = None
-    log_lines.append(f"--- run started {time.strftime('%Y-%m-%d %H:%M:%S')} ---")
+def _notify(title: str, message: str) -> None:
+    """Best-effort native Windows toast; falls back to a blocking popup if that fails so the
+    user always gets *something* telling them the batch is done."""
+    ps_script = f"""
+$xml = @"
+<toast><visual><binding template='ToastGeneric'>
+<text>{title}</text><text>{message}</text>
+</binding></visual></toast>
+"@
+try {{
+  [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType=WindowsRuntime] > $null
+  [Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType=WindowsRuntime] > $null
+  $doc = [Windows.Data.Xml.Dom.XmlDocument]::new()
+  $doc.LoadXml($xml)
+  $toast = [Windows.UI.Notifications.ToastNotification]::new($doc)
+  [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier("Peace Reels").Show($toast)
+}} catch {{
+  Add-Type -AssemblyName System.Windows.Forms
+  [System.Windows.Forms.MessageBox]::Show("{message}", "{title}") > $null
+}}
+"""
+    try:
+        subprocess.run(
+            ["powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", ps_script],
+            timeout=20,
+        )
+    except Exception as e:
+        log_lines.append(f"(notification failed: {e})")
+
+
+def _run_one(video_num: int) -> bool:
+    log_lines.append(f"--- video {video_num}/{VIDEOS_PER_RUN} started ---")
     try:
         proc = subprocess.Popen(
             [PYTHON, str(ROOT / "src" / "generate.py"), "--config", "config.yaml"],
@@ -49,20 +76,44 @@ def _run_job() -> None:
         for line in proc.stdout:  # type: ignore[union-attr]
             log_lines.append(line.rstrip("\n"))
         code = proc.wait()
-        with state_lock:
-            state["last_result"] = "success" if code == 0 else "error"
-            if code != 0:
-                state["last_error"] = f"generate.py exited with code {code}"
+        if code != 0:
+            log_lines.append(f"--- video {video_num} FAILED (exit {code}) ---")
+        return code == 0
     except Exception as e:
+        log_lines.append(f"--- video {video_num} FAILED: {e} ---")
+        return False
+
+
+def _run_job() -> None:
+    with state_lock:
+        state["running"] = True
+        state["started_at"] = time.time()
+        state["finished_at"] = None
+        state["last_result"] = None
+        state["last_error"] = None
+        state["progress"] = f"0/{VIDEOS_PER_RUN}"
+    log_lines.append(f"--- batch started {time.strftime('%Y-%m-%d %H:%M:%S')}: {VIDEOS_PER_RUN} videos ---")
+
+    succeeded = 0
+    for i in range(1, VIDEOS_PER_RUN + 1):
+        ok = _run_one(i)
+        succeeded += 1 if ok else 0
         with state_lock:
-            state["last_result"] = "error"
-            state["last_error"] = str(e)
-        log_lines.append(f"--- run failed: {e} ---")
-    finally:
-        with state_lock:
-            state["running"] = False
-            state["finished_at"] = time.time()
-        log_lines.append(f"--- run finished {time.strftime('%Y-%m-%d %H:%M:%S')} ---")
+            state["progress"] = f"{succeeded}/{VIDEOS_PER_RUN}"
+    failed = VIDEOS_PER_RUN - succeeded
+
+    with state_lock:
+        state["running"] = False
+        state["finished_at"] = time.time()
+        state["last_result"] = "success" if failed == 0 else ("error" if succeeded == 0 else "partial")
+        state["last_error"] = None if failed == 0 else f"{failed}/{VIDEOS_PER_RUN} video(s) failed — see log"
+    log_lines.append(f"--- batch finished: {succeeded}/{VIDEOS_PER_RUN} uploaded ---")
+
+    summary = f"{succeeded}/{VIDEOS_PER_RUN} videos uploaded." + (f" {failed} failed." if failed else "")
+    _notify("Peace Reels", summary)
+    log_lines.append("--- shutting down ---")
+    time.sleep(2)  # give the notification a moment to actually reach the OS before we die
+    os._exit(0)
 
 
 def _recent_jobs(limit: int = 12) -> list[dict]:
@@ -140,6 +191,7 @@ PAGE_HTML = """<!doctype html>
   .idle { background: #4444; }
   .running { background: #f5a62344; color: #b57300; }
   .success { background: #2ecc7133; color: #1e8449; }
+  .partial { background: #f5a62344; color: #b57300; }
   .error { background: #e74c3c33; color: #c0392b; }
   button { padding: 10px 20px; font-size: 1rem; border-radius: 8px; border: 1px solid #8884; cursor: pointer; }
   button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -172,9 +224,10 @@ async function runNow() {
 
 function fmtBadge(s) {
   const badge = document.getElementById('status-badge');
-  if (s.running) { badge.textContent = 'Running…'; badge.className = 'running'; }
-  else if (s.last_result === 'success') { badge.textContent = 'Idle — last run OK'; badge.className = 'success'; }
-  else if (s.last_result === 'error') { badge.textContent = 'Idle — last run failed'; badge.className = 'error'; }
+  if (s.running) { badge.textContent = `Running… (${s.progress})`; badge.className = 'running'; }
+  else if (s.last_result === 'success') { badge.textContent = `Done — ${s.progress} uploaded, shutting down`; badge.className = 'success'; }
+  else if (s.last_result === 'partial') { badge.textContent = `Done — ${s.progress} uploaded (some failed), shutting down`; badge.className = 'partial'; }
+  else if (s.last_result === 'error') { badge.textContent = 'Failed — shutting down'; badge.className = 'error'; }
   else { badge.textContent = 'Idle'; badge.className = 'idle'; }
   document.getElementById('run-btn').disabled = s.running;
 }
