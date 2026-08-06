@@ -14,3 +14,6 @@ kokoro>=0.9.4
 google-api-python-client>=2.140.0
 google-auth-oauthlib>=1.2.1
 google-auth-httplib2>=0.2.0
+
+# Local status dashboard (src/dashboard.py), triggered by "Run Peace Reels.bat"
+flask>=3.0.0

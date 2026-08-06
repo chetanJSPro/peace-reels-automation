@@ -243,7 +243,9 @@ def main() -> None:
     if upload_cfg.get("enabled"):
         from uploader import upload_from_metadata
 
-        upload_from_metadata(job_dir / "metadata.json", cfg)
+        youtube_video_id = upload_from_metadata(job_dir / "metadata.json", cfg)
+        metadata["youtube_video_id"] = youtube_video_id
+        (job_dir / "metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
 
     # Instagram publishing needs the rendered video pushed to the public repo first (the Graph
     # API only fetches video from a public HTTPS URL), so it can't happen inline here — the
