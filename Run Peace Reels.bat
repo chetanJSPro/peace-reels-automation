@@ -1,5 +1,6 @@
 @echo off
-cd /d "%~dp0"
+rem Hardcoded (not %~dp0) so this still works when copied/run from the Desktop.
+cd /d "c:\Users\cheta\Downloads\peace_reels_automation\peace_reels_automation"
 set PY=C:\pra_venv\Scripts\python.exe
 
 rem Start the dashboard server in the background if it isn't already running.
