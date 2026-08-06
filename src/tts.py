@@ -10,6 +10,7 @@ def synthesize_kokoro(
     lang_code: str = "h",
     voice_id: str = "hm_omega",
     speed: float = 0.94,
+    pause_seconds: float = 0.55,
 ) -> Path:
     """Generate local TTS with Kokoro.
 
@@ -19,6 +20,10 @@ def synthesize_kokoro(
 
     Kokoro outputs 24kHz WAV and is Apache-licensed upstream, but always check model/package
     license before commercial use.
+
+    `pause_seconds` inserts real silence between each line (Kokoro itself only has a brief
+    natural gap per chunk) — this is the main lever for a slower, more deliberate/meditative
+    delivery pace, without altering or cloning anyone's actual voice.
     """
     try:
         import numpy as np
@@ -33,12 +38,16 @@ def synthesize_kokoro(
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     pipeline = KPipeline(lang_code=lang_code)
+    sample_rate = 24000
+    silence = np.zeros(int(pause_seconds * sample_rate), dtype=np.float32)
     chunks = []
     generator = pipeline(text, voice=voice_id, speed=speed, split_pattern=r"\n+")
     for _graphemes, _phonemes, audio in generator:
+        if chunks:
+            chunks.append(silence)
         chunks.append(audio)
     if not chunks:
         raise RuntimeError("Kokoro returned no audio chunks")
     audio_all = np.concatenate(chunks)
-    sf.write(str(out), audio_all, 24000)
+    sf.write(str(out), audio_all, sample_rate)
     return out

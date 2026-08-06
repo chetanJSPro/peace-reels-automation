@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import random
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -76,14 +77,17 @@ def fetch_videos_for_queries(
 ) -> list[DownloadedVideo]:
     out: list[DownloadedVideo] = []
     seen_ids: set[str] = set()
-    for q in queries:
+    shuffled_queries = list(queries)
+    random.shuffle(shuffled_queries)
+    for q in shuffled_queries:
         if len(out) >= max_downloads:
             break
         try:
-            videos = search_pexels_videos(q, orientation=orientation, per_page=12)
+            videos = search_pexels_videos(q, orientation=orientation, per_page=30)
         except Exception as e:
             print(f"Pexels search failed for {q!r}: {e}")
             continue
+        random.shuffle(videos)
         for v in videos:
             if len(out) >= max_downloads:
                 break

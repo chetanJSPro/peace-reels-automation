@@ -108,6 +108,7 @@ def main() -> None:
         lang_code=voice_cfg.get("lang_code", "h"),
         voice_id=voice_cfg.get("voice_id", "hm_omega"),
         speed=float(voice_cfg.get("speed", 0.94)),
+        pause_seconds=float(voice_cfg.get("pause_seconds", 0.55)),
     )
     duration = ffprobe_duration(narration_wav) + 0.45
     if fmt.get("mode", "short") == "short" and duration > 58:

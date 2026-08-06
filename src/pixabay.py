@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import random
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -66,14 +67,21 @@ def fetch_videos_for_queries(
 ) -> list[DownloadedVideo]:
     out: list[DownloadedVideo] = []
     seen_ids: set[str] = set()
-    for q in queries:
+    # Shuffle query order so a topic with several queries doesn't always exhaust the same first
+    # ones before hitting max_downloads, and pull a bigger page + shuffle it so repeat runs of
+    # the same topic don't always land on the same top-ranked results (was the main cause of
+    # "same background videos every time" — every run used to take results 1..N in fixed order).
+    shuffled_queries = list(queries)
+    random.shuffle(shuffled_queries)
+    for q in shuffled_queries:
         if len(out) >= max_downloads:
             break
         try:
-            videos = search_pixabay_videos(q, per_page=12)
+            videos = search_pixabay_videos(q, per_page=30)
         except Exception as e:
             print(f"Pixabay search failed for {q!r}: {e}")
             continue
+        random.shuffle(videos)
         for v in videos:
             if len(out) >= max_downloads:
                 break

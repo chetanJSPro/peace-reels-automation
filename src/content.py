@@ -21,7 +21,7 @@ class ScriptPackage:
 
     @property
     def narration_text(self) -> str:
-        # Line breaks help Kokoro split into natural phrases.
+        # Line breaks split into per-line chunks; tts.py inserts real silence between them.
         return "\n".join([self.hook, *self.lines, self.cta])
 
     @property

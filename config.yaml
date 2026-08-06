@@ -60,7 +60,7 @@ visuals:
   local_video_dir: ""
   downloads_dir: "assets/videos/pexels"
   pixabay_downloads_dir: "assets/videos/pixabay"
-  max_downloads: 8
+  max_downloads: 12
   orientation: "portrait"
 
 music:
@@ -73,7 +73,10 @@ voice:
   engine: "kokoro"
   lang_code: "h"          # Kokoro: h=Hindi, a=US English, b=British English
   voice_id: "hm_psi"      # Hindi: hf_alpha/hf_beta (female), hm_omega/hm_psi (male); hm_psi = deeper
-  speed: 0.85              # slower, more deliberate pace
+  # Slower + deeper for a calmer, more deliberate saint-like delivery (closest legitimate lever —
+  # we don't clone any real person's actual voice, see README's originality rules).
+  speed: 0.78
+  pause_seconds: 0.55     # real silence inserted between each narration line
 
 metadata:
   hashtags:
