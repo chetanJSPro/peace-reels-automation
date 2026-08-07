@@ -73,10 +73,11 @@ voice:
   engine: "kokoro"
   lang_code: "h"          # Kokoro: h=Hindi, a=US English, b=British English
   voice_id: "hm_psi"      # Hindi: hf_alpha/hf_beta (female), hm_omega/hm_psi (male); hm_psi = deeper
-  # Slower + deeper for a calmer, more deliberate saint-like delivery (closest legitimate lever —
-  # we don't clone any real person's actual voice, see README's originality rules).
-  speed: 0.78
-  pause_seconds: 0.55     # real silence inserted between each narration line
+  # Reverted 2026-08-08: 0.78 speed + 0.55s pauses were confirmed by real listening feedback to
+  # sound worse/more unrealistic, not more human — the theory (less robotic uniformity) didn't
+  # hold up in practice. Back to the pace that was confirmed good before that change.
+  speed: 0.85
+  pause_seconds: 0.15     # small gap only, mostly relying on Kokoro's own natural per-line gap
 
 metadata:
   hashtags:
