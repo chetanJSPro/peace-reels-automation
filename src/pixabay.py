@@ -11,6 +11,7 @@ import requests
 from tqdm import tqdm
 
 from pexels import download_file
+from utils import is_relevant_india_content
 
 
 @dataclass
@@ -87,6 +88,8 @@ def fetch_videos_for_queries(
                 break
             vid = str(v.get("id"))
             if vid in seen_ids:
+                continue
+            if not is_relevant_india_content(v.get("tags", "")):
                 continue
             best = _best_video_file(v, portrait=(orientation == "portrait"))
             if not best:

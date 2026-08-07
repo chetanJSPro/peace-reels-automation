@@ -88,6 +88,51 @@ def list_media(folder: str | Path, exts: Iterable[str]) -> list[Path]:
     return sorted([x for x in p.rglob("*") if x.suffix.lower() in exts])
 
 
+# A blocklist alone doesn't scale (can't enumerate every wrong country) — two real published
+# videos already slipped through with a narrow place-name query ("Lakshman Jhula bridge",
+# "Himalaya clouds peaks") that isn't well-tagged on stock sites, so search fell back to loosely
+# related results: one RISHIKESH-labeled video used the Golden Gate Bridge (San Francisco), one
+# HIMALAYAN-labeled video used the Matterhorn (Switzerland). So this now *requires* positive
+# evidence of Indian content in the tags, and additionally rejects known-wrong places as a
+# backstop for the (rare) case of sparse/empty tags.
+INDIA_ALLOWLIST = [
+    "india", "indian", "bharat", "ganga", "ganges", "himalaya", "himalayan",
+    "rishikesh", "varanasi", "kashi", "haridwar", "uttarakhand", "uttar pradesh",
+    "ashram", "ghat", "sadhu", "yogi", "yoga", "hindu", "hinduism", "mumbai", "delhi",
+    "kerala", "rajasthan", "punjab", "goa", "taj mahal", "monsoon", "himachal",
+]
+FOREIGN_LOCATION_BLOCKLIST = [
+    "usa", "america", "united states", "san francisco", "golden gate", "new york",
+    "california", "texas", "england", "britain", "uk", "london", "bristol", "scotland",
+    "wales", "ireland", "europe", "france", "paris", "germany", "italy", "spain",
+    "switzerland", "alps", "matterhorn", "zermatt", "austria", "portugal", "greece",
+    "greenland", "iceland", "norway", "sweden", "denmark", "netherlands",
+    "canada", "australia", "china", "japan", "korea", "nepal", "bhutan", "tibet",
+    "africa", "mexico", "russia", "brazil", "thailand", "vietnam", "indonesia",
+    "philippines", "turkey", "egypt", "dubai", "uae",
+]
+
+
+def is_relevant_india_content(tags: str) -> bool:
+    """True only when the candidate's own tags positively indicate Indian content (or provide
+    no tags at all to judge by), and don't mention a known-wrong country/landmark. Use this when
+    the source gives rich descriptive tags (e.g. Pixabay)."""
+    t = (tags or "").lower()
+    if any(bad in t for bad in FOREIGN_LOCATION_BLOCKLIST):
+        return False
+    if not t.strip():
+        return True  # no metadata to judge by — can't penalize missing tags
+    return any(good in t for good in INDIA_ALLOWLIST)
+
+
+def mentions_foreign_place(text: str) -> bool:
+    """Blocklist-only check for sources that only give sparse text (e.g. a Pexels page-URL
+    slug) — too little text to fairly require positive India evidence, but still worth
+    rejecting an obvious wrong-country match."""
+    t = (text or "").lower()
+    return any(bad in t for bad in FOREIGN_LOCATION_BLOCKLIST)
+
+
 def dedupe_paths(paths: Iterable[str | Path]) -> list[Path]:
     """Drop duplicate files (e.g. a stock clip picked up by both the local-folder scan and a
     fresh API fetch of the same file) while preserving first-seen order."""

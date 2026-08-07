@@ -10,6 +10,8 @@ from typing import Any
 import requests
 from tqdm import tqdm
 
+from utils import mentions_foreign_place
+
 
 @dataclass
 class DownloadedVideo:
@@ -94,12 +96,14 @@ def fetch_videos_for_queries(
             vid = str(v.get("id"))
             if vid in seen_ids:
                 continue
+            page_url = v.get("url") or f"https://www.pexels.com/video/{vid}/"
+            if mentions_foreign_place(page_url):
+                continue
             best = _best_video_file(v, portrait=(orientation == "portrait"))
             if not best:
                 continue
             seen_ids.add(vid)
             user = (v.get("user") or {}).get("name", "Pexels creator")
-            page_url = v.get("url") or f"https://www.pexels.com/video/{vid}/"
             credit = f"Pexels video by {user}: {page_url}"
             path = Path(downloads_dir) / f"pexels_{vid}.mp4"
             try:
