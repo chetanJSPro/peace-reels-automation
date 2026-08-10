@@ -16,7 +16,7 @@ from utils import project_root
 ROOT = project_root()
 PYTHON = sys.executable  # dashboard.py is launched by the same venv python, so reuse it
 LOG_TAIL_LINES = 300
-VIDEOS_PER_RUN = 2  # click the desktop icon once -> 2 uploads, then this process exits itself
+VIDEOS_PER_RUN = 3  # click the desktop icon once -> 3 uploads (matches the cloud cadence), then this process exits itself
 
 app = Flask(__name__)
 
