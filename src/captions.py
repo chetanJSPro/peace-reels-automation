@@ -67,7 +67,10 @@ def wrap_for_ass(text: str, max_chars: int = 28) -> str:
             cur = w if not cur else cur + " " + w
     if cur:
         lines.append(cur)
-    return r"\N".join(lines[:2])
+    # Previously capped at lines[:2], which silently deleted the rest of the sentence
+    # on-screen for any line that wrapped to 3+ lines (narration still spoke the full
+    # line, but the caption cut it off). Keep every wrapped line instead.
+    return r"\N".join(lines)
 
 
 def write_srt(segments: list[Segment], out_path: str | Path) -> Path:

@@ -1,12 +1,16 @@
 name: Peace Reels 24x7 automation
 
 # Runs entirely on GitHub's free hosted runners — keeps posting even if the local PC is off.
-# Cadence: 2 videos/day at the two windows generally reported as highest-engagement for Indian
-# Shorts/Reels audiences (morning phone-check, evening wind-down). Cron is UTC; IST = UTC + 5:30.
+# Cadence: 3 videos/day, researched for Hindi spiritual/meditation Shorts aimed at an Indian
+# audience: morning commute scroll, lunch-break micro-scrolling, evening wind-down (the strongest
+# window — reflective/inner-peace framing fits it best). Slots are spaced 5.5-7.5h apart, above
+# the ~4-6h minimum needed so consecutive Shorts don't cannibalize each other's algorithmic
+# distribution window. Cron is UTC; IST = UTC + 5:30.
 on:
   schedule:
-    - cron: "0 2 * * *"   # 07:30 IST
-    - cron: "0 15 * * *"  # 20:30 IST
+    - cron: "45 1 * * *"   # 07:15 IST - morning commute / "start the day mindfully"
+    - cron: "15 7 * * *"   # 12:45 IST - lunch-break scroll peak
+    - cron: "45 14 * * *"  # 20:15 IST - evening wind-down (strongest overall Shorts window)
   workflow_dispatch: {}   # lets you trigger a run manually from the Actions tab
 
 permissions:
@@ -28,10 +32,16 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Install system dependencies (ffmpeg, espeak-ng)
+      - name: Install system dependencies (ffmpeg, espeak-ng, fonts)
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg espeak-ng
+          # fonts-noto-core provides NotoSansDevanagari -- without it, ubuntu-latest has no
+          # Devanagari glyphs at all, so ffmpeg's ass filter (libass + fontconfig) silently
+          # substitutes a fallback font that can't render Hindi text -- every caption character
+          # comes out as a tofu/block glyph in the burned-in subtitles. fonts-noto-color-emoji
+          # covers the location-pin emoji for the same reason.
+          sudo apt-get install -y ffmpeg espeak-ng fonts-noto-core fonts-noto-color-emoji
+          fc-cache -f
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt

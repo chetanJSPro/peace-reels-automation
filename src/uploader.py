@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 
-from google.auth.exceptions import RefreshError
+from google.auth.exceptions import RefreshError, TransportError
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+from requests.exceptions import ConnectionError as RequestsConnectionError
 
 from utils import project_root, resolve_path
 
@@ -28,11 +30,30 @@ def get_youtube_service(client_secrets_file: str | Path, token_file: str | Path)
     if not creds or not creds.valid:
         refreshed = False
         if creds and creds.expired and creds.refresh_token:
-            try:
-                creds.refresh(Request())
-                refreshed = True
-            except RefreshError:
-                print("Saved refresh token is no longer valid; starting a fresh login.")
+            # DNS/network blips (e.g. oauth2.googleapis.com briefly unresolvable) previously
+            # crashed the whole run right after the video had already been rendered, wasting
+            # the render and skipping the upload entirely. Retry transient network errors a
+            # few times before giving up; only fall back to an interactive login if the
+            # refresh token itself is actually invalid (RefreshError).
+            for attempt in range(1, 4):
+                try:
+                    creds.refresh(Request())
+                    refreshed = True
+                    break
+                except RefreshError:
+                    print("Saved refresh token is no longer valid; starting a fresh login.")
+                    break
+                except (TransportError, RequestsConnectionError) as e:
+                    if attempt == 3:
+                        raise RuntimeError(
+                            f"Could not reach oauth2.googleapis.com after {attempt} attempts "
+                            "(network/DNS issue). The rendered video was NOT lost — retry the "
+                            "upload later with: python src/uploader.py <job_dir>/metadata.json "
+                            "--config config.yaml"
+                        ) from e
+                    wait = 5 * attempt
+                    print(f"Token refresh network error ({e}); retrying in {wait}s (attempt {attempt}/3)...")
+                    time.sleep(wait)
         if not refreshed:
             flow = InstalledAppFlow.from_client_secrets_file(str(client_secrets_file), SCOPES)
             creds = flow.run_local_server(port=8080)

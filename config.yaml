@@ -3,12 +3,14 @@ project:
   output_dir: "output"
   language: "hi"          # hi = Hindi/Hinglish content
   timezone: "Asia/Kolkata"
-  # Posting cadence for the 24x7 cloud scheduler (see .github/workflows/publish.yml): 2 videos/day
-  # at the two windows generally reported as highest-engagement for Indian Shorts/Reels audiences
-  # — morning phone-check and evening wind-down. Cron times in the workflow are UTC (IST - 5:30).
+  # Posting cadence for the 24x7 cloud scheduler (see .github/workflows/publish.yml): 3 videos/day
+  # at researched peak windows for Hindi spiritual/meditation Shorts in India — morning commute,
+  # lunch-break scroll, and evening wind-down (strongest window). Keep this in sync with the cron
+  # entries in the workflow (which are in UTC = IST - 5:30) if you change it.
   post_times_ist:
-    - "07:30"
-    - "20:30"
+    - "07:15"
+    - "12:45"
+    - "20:15"
 
 format:
   mode: "short"            # short or long
