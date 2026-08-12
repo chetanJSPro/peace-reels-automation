@@ -42,6 +42,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Generate a peaceful India/spiritual Shorts-style video legally.")
     parser.add_argument("--config", default="config.example.yaml", help="YAML config path")
     parser.add_argument("--topic-index", type=int, default=None, help="Row index in data/ideas.csv")
+    parser.add_argument(
+        "--time-slot",
+        default=None,
+        choices=["morning", "midday", "evening"],
+        help="Force a content slot (see content.SLOT_TOPICS) instead of deriving it from the "
+        "current IST clock. Used by the desktop dashboard's multi-video batch runs so 3 videos "
+        "triggered back-to-back still span all three themes instead of all landing in whichever "
+        "single slot the click happened to fall in.",
+    )
     parser.add_argument("--dry-run", action="store_true", help="Create scripts/metadata only; do not render")
     args = parser.parse_args()
 
@@ -81,7 +90,7 @@ def main() -> None:
         # independently via next_rotating_index_for_key, so it doesn't repeat within itself.
         state_path = resolve_path(root, content_cfg.get("state_file", "data/state.json"))
         ideas = load_ideas(ideas_csv)
-        slot = current_slot(content_cfg.get("time_slots") or {}, ist_now_minutes())
+        slot = args.time_slot or current_slot(content_cfg.get("time_slots") or {}, ist_now_minutes())
         candidate_indices = topic_indices_for_slot(ideas, slot)
         pos = next_rotating_index_for_key(state_path, slot or "all", len(candidate_indices))
         topic_index = candidate_indices[pos]

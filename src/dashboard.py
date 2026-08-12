@@ -17,6 +17,11 @@ ROOT = project_root()
 PYTHON = sys.executable  # dashboard.py is launched by the same venv python, so reuse it
 LOG_TAIL_LINES = 300
 VIDEOS_PER_RUN = 3  # click the desktop icon once -> 3 uploads (matches the cloud cadence), then this process exits itself
+# The 3 videos fire back-to-back within a couple of minutes, so picking the content slot from
+# the real clock (like the scheduled cloud runs do) would land all 3 in whichever single slot
+# the click happened to fall in. Force one video per slot instead, so a manual batch always
+# spans the full topic variety instead of hammering one 7-8 topic pool three times.
+SLOT_CYCLE = ["morning", "midday", "evening"]
 
 app = Flask(__name__)
 
@@ -62,11 +67,11 @@ try {{
         log_lines.append(f"(notification failed: {e})")
 
 
-def _run_one(video_num: int) -> bool:
-    log_lines.append(f"--- video {video_num}/{VIDEOS_PER_RUN} started ---")
+def _run_one(video_num: int, time_slot: str) -> bool:
+    log_lines.append(f"--- video {video_num}/{VIDEOS_PER_RUN} started (slot={time_slot}) ---")
     try:
         proc = subprocess.Popen(
-            [PYTHON, str(ROOT / "src" / "generate.py"), "--config", "config.yaml"],
+            [PYTHON, str(ROOT / "src" / "generate.py"), "--config", "config.yaml", "--time-slot", time_slot],
             cwd=str(ROOT),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -96,7 +101,7 @@ def _run_job() -> None:
 
     succeeded = 0
     for i in range(1, VIDEOS_PER_RUN + 1):
-        ok = _run_one(i)
+        ok = _run_one(i, SLOT_CYCLE[(i - 1) % len(SLOT_CYCLE)])
         succeeded += 1 if ok else 0
         with state_lock:
             state["progress"] = f"{succeeded}/{VIDEOS_PER_RUN}"
