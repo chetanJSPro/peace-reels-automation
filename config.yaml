@@ -43,6 +43,17 @@ content:
     - "cure disease"
     - "guaranteed miracle"
     - "open third eye in 5 minutes"
+  # Matches each scheduled run's topic to *why* someone is opening Shorts at that moment
+  # instead of posting whatever the flat rotation lands on next. Slot names must match the keys
+  # in src/content.py's SLOT_TOPICS. Windows are IST (post_times_ist above should fall inside
+  # their matching window); the "evening" window wraps past midnight so a late-running or
+  # manually-triggered night job still gets a wind-down topic instead of falling through to the
+  # unfiltered list. Each slot keeps its own rotation pointer (data/state.json -> slot_index), so
+  # it won't repeat a topic within itself even though the global CSV has many more rows.
+  time_slots:
+    morning: { start: "05:00", end: "10:30" }   # matches the 07:15 post: intention-setting themes
+    midday: { start: "10:30", end: "17:00" }    # matches the 12:45 post: practical/reflective themes
+    evening: { start: "17:00", end: "05:00" }   # matches the 20:15 post: deep wind-down themes
 
 visuals:
   source: "auto"   # auto (Pixabay + Pexels), pexels_or_local, pixabay_or_local, local_only

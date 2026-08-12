@@ -34,6 +34,10 @@ content:
     - "cure disease"
     - "guaranteed miracle"
     - "open third eye in 5 minutes"
+  time_slots:
+    morning: { start: "05:00", end: "10:30" }
+    midday: { start: "10:30", end: "17:00" }
+    evening: { start: "17:00", end: "05:00" }
 
 visuals:
   source: "auto"   # auto (Pixabay + Pexels), pexels_or_local, pixabay_or_local, local_only

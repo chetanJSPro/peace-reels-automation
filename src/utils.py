@@ -5,7 +5,7 @@ import os
 import re
 import shlex
 import subprocess
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -171,4 +171,26 @@ def next_rotating_index(state_path: str | Path, count: int) -> int:
     state = read_json(state_path, {"last_topic_index": -1})
     nxt = (int(state.get("last_topic_index", -1)) + 1) % count
     write_json(state_path, {"last_topic_index": nxt})
+    return nxt
+
+
+def ist_now_minutes() -> int:
+    """Current minute-of-day in IST (UTC+5:30, no DST), without needing a system tz database —
+    GitHub's ubuntu-latest runners have one, but a bare Windows Python often doesn't."""
+    now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+    return now.hour * 60 + now.minute
+
+
+def next_rotating_index_for_key(state_path: str | Path, key: str, count: int) -> int:
+    """Like next_rotating_index, but keeps an independent round-robin pointer per `key` (e.g. a
+    time-of-day content slot) under state["slot_index"][key], so each slot's topic pool cycles
+    on its own instead of sharing one global pointer with the other slots."""
+    if count <= 0:
+        return 0
+    state = read_json(state_path, {})
+    slots = state.get("slot_index") or {}
+    nxt = (int(slots.get(key, -1)) + 1) % count
+    slots[key] = nxt
+    state["slot_index"] = slots
+    write_json(state_path, state)
     return nxt

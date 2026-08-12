@@ -8,7 +8,16 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from captions import distribute_segments, write_ass, write_srt
-from content import build_description, choose_idea, load_ideas, package_from_idea, package_with_ollama, topic_visual_style
+from content import (
+    build_description,
+    choose_idea,
+    current_slot,
+    load_ideas,
+    package_from_idea,
+    package_with_ollama,
+    topic_indices_for_slot,
+    topic_visual_style,
+)
 from pexels import fetch_videos_for_queries as fetch_pexels_videos
 from pixabay import fetch_videos_for_queries as fetch_pixabay_videos
 from tts import synthesize_kokoro
@@ -17,9 +26,10 @@ from utils import (
     ensure_dir,
     ffprobe_duration,
     has_command,
+    ist_now_minutes,
     list_media,
     load_yaml,
-    next_rotating_index,
+    next_rotating_index_for_key,
     now_stamp,
     project_root,
     resolve_path,
@@ -65,8 +75,16 @@ def main() -> None:
     elif content_cfg.get("rotate_topics", True):
         # Auto-advance through data/ideas.csv on every run so an unattended 24x7 scheduler
         # never generates the same topic (and therefore near-identical video) twice in a row.
+        # On top of that, match the topic's theme to *why* someone is scrolling Shorts right
+        # now (morning intention-setting, lunch-break reflection, evening wind-down) instead of
+        # picking from the full list regardless of time — each slot rotates its own pool
+        # independently via next_rotating_index_for_key, so it doesn't repeat within itself.
         state_path = resolve_path(root, content_cfg.get("state_file", "data/state.json"))
-        topic_index = next_rotating_index(state_path, len(load_ideas(ideas_csv)))
+        ideas = load_ideas(ideas_csv)
+        slot = current_slot(content_cfg.get("time_slots") or {}, ist_now_minutes())
+        candidate_indices = topic_indices_for_slot(ideas, slot)
+        pos = next_rotating_index_for_key(state_path, slot or "all", len(candidate_indices))
+        topic_index = candidate_indices[pos]
     else:
         topic_index = int(content_cfg.get("topic_index", 0))
 

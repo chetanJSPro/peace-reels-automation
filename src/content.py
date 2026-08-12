@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import json
 import os
+import random
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -34,19 +35,106 @@ def load_ideas(csv_path: str | Path) -> list[dict[str, str]]:
         return list(csv.DictReader(f))
 
 
-# Ties each script topic to a real place in data/locations.csv, so the on-screen pin label and
+# Ties each script topic to real places in data/locations.csv, so the on-screen pin label and
 # the stock-footage search queries actually match what the narration is talking about (this is
 # how the reference channel does it: a Rishikesh script shows Rishikesh, not generic waves).
+# Each topic maps to a *list* of 2-4 places instead of one fixed place: topic_visual_style()
+# picks a different one at random per generation run, so the same topic doesn't pull the same
+# footage/pin label every time it comes up in rotation (this was the main cause of "same clips,
+# new text" — one topic, one place, forever).
 TOPIC_LOCATION = {
-    "rishikesh_sukoon": "Rishikesh",
-    "kashi_ghat": "Kashi",
-    "mountain_mind": "Himalaya",
-    "brahma_muhurta": "Temple",
-    "silence_peace": "Forest",
-    "detachment": "Ganga Ghat",
-    "karma": "Forest",
-    "inner_home": "Ganga Ghat",
+    "rishikesh_sukoon": ["Rishikesh", "Ganga Ghat"],
+    "kashi_ghat": ["Kashi", "Ganga Ghat"],
+    "mountain_mind": ["Himalaya", "Ladakh", "Kedarnath"],
+    "brahma_muhurta": ["Temple", "Rishikesh", "Pushkar"],
+    "silence_peace": ["Forest", "Himalaya", "Ladakh"],
+    "detachment": ["Ganga Ghat", "Kashi", "Forest"],
+    "karma": ["Temple", "Forest", "Kashi"],
+    "inner_home": ["Forest", "Ganga Ghat", "Rishikesh"],
+    "gratitude": ["Temple", "Pushkar", "Amritsar"],
+    "patience": ["Himalaya", "Forest", "Kedarnath"],
+    "self_love": ["Rishikesh", "Forest", "Kerala Backwaters"],
+    "present_moment": ["Ganga Ghat", "Coorg", "Forest"],
+    "forgiveness": ["Kashi", "Ganga Ghat", "Temple"],
+    "simplicity": ["Coorg", "Kerala Backwaters", "Forest"],
+    "devotion": ["Amritsar", "Temple", "Pushkar", "Kashi"],
+    "night_stillness": ["Kashi", "Ganga Ghat", "Himalaya"],
+    "river_wisdom": ["Ganga Ghat", "Rishikesh", "Kashi"],
+    "sacred_journey": ["Kedarnath", "Pushkar", "Himalaya", "Amritsar"],
+    "inner_light": ["Temple", "Amritsar", "Kashi"],
+    "ego_letting_go": ["Himalaya", "Ladakh", "Forest"],
+    "solitude_strength": ["Ladakh", "Himalaya", "Kedarnath"],
+    "change_acceptance": ["Coorg", "Kerala Backwaters", "Ganga Ghat"],
 }
+
+
+# Groups topics by which daily posting slot they fit best, so the scheduler can post the theme
+# that matches *why* someone is opening Shorts at that moment instead of whatever the flat
+# rotation lands on — a morning-intention topic at 07:15, a practical/detachment topic on the
+# lunch scroll at 12:45, a deep wind-down topic in the strongest evening window at 20:15. This is
+# the "viral timing" lever: matching content to the moment, not just picking a good posting time.
+SLOT_TOPICS = {
+    "morning": [
+        "brahma_muhurta", "gratitude", "present_moment", "self_love", "patience",
+        "devotion", "sacred_journey",
+    ],
+    "midday": [
+        "karma", "detachment", "simplicity", "ego_letting_go", "solitude_strength",
+        "change_acceptance", "forgiveness",
+    ],
+    "evening": [
+        "silence_peace", "rishikesh_sukoon", "kashi_ghat", "mountain_mind", "inner_home",
+        "river_wisdom", "inner_light", "night_stillness",
+    ],
+}
+
+
+def _parse_hm(value: str) -> int:
+    h, m = value.split(":")
+    return int(h) * 60 + int(m)
+
+
+def current_slot(time_slots: dict[str, dict[str, str]], now_ist_minutes: int) -> str | None:
+    """Return the configured slot name (e.g. "morning") whose start/end window in
+    config.yaml's content.time_slots contains the given minute-of-day (IST), or None if no
+    window is configured/matches — callers should fall back to unfiltered rotation in that case.
+    """
+    for slot, window in (time_slots or {}).items():
+        try:
+            start, end = _parse_hm(window["start"]), _parse_hm(window["end"])
+        except (KeyError, ValueError):
+            continue
+        if start <= end:
+            if start <= now_ist_minutes < end:
+                return slot
+        elif now_ist_minutes >= start or now_ist_minutes < end:  # window wraps past midnight
+            return slot
+    return None
+
+
+def topic_indices_for_slot(ideas: list[dict[str, str]], slot: str | None) -> list[int]:
+    """Row indices in data/ideas.csv whose topic belongs to `slot`, interleaved round-robin
+    across topics (rather than left in raw CSV order). data/ideas.csv is written in per-topic
+    blocks, so raw order would give the slot's rotation pointer several picks of the same topic
+    in a row before ever reaching the next one — the same "same content repeated" problem this
+    slot system exists to avoid, just rediscovered inside a single slot. Falls back to every row
+    (still interleaved) when the slot is unknown or none of its topics are present."""
+    topics = SLOT_TOPICS.get(slot, []) if slot else []
+    topic_filter = set(topics) if topics else None
+    by_topic: dict[str, list[int]] = {}
+    for i, row in enumerate(ideas):
+        t = row.get("topic")
+        if topic_filter is None or t in topic_filter:
+            by_topic.setdefault(t, []).append(i)
+    if not by_topic:
+        return list(range(len(ideas)))
+    order = [t for t in topics if t in by_topic] or sorted(by_topic)
+    interleaved: list[int] = []
+    while any(by_topic[t] for t in order):
+        for t in order:
+            if by_topic[t]:
+                interleaved.append(by_topic[t].pop(0))
+    return interleaved
 
 
 def load_locations(csv_path: str | Path) -> dict[str, dict[str, str]]:
@@ -70,7 +158,8 @@ def topic_visual_style(
     Falls back to the config-wide defaults when the topic has no mapping or locations.csv
     is missing/empty, so this degrades gracefully instead of breaking generation.
     """
-    place_key = TOPIC_LOCATION.get(topic)
+    place_keys = TOPIC_LOCATION.get(topic)
+    place_key = random.choice(place_keys) if place_keys else None
     locations = load_locations(locations_csv)
     place = locations.get(place_key) if place_key else None
     if not place:
