@@ -2,6 +2,7 @@
   "last_topic_index": 7,
   "slot_index": {
     "morning": 0,
-    "midday": 0
+    "midday": 0,
+    "evening": 0
   }
 }
