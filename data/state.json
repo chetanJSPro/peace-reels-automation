@@ -1,3 +1,6 @@
 {
-  "last_topic_index": 7
+  "last_topic_index": 7,
+  "slot_index": {
+    "morning": 0
+  }
 }
