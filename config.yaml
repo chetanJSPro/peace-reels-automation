@@ -109,6 +109,13 @@ upload:
   publish_at: ""              # ISO time, e.g. 2026-08-01T18:30:00+05:30; requires privacy_status=private
   upload_thumbnail: true
   upload_captions: true
+  # Every generated video is uploaded once per entry here. All channels share the same OAuth
+  # app (youtube/client_secret.json) -- each token file just represents a different completed
+  # login, so this fans the same render out to multiple channels. One channel failing (bad/
+  # expired token) doesn't block the others.
+  token_files:
+    - "youtube/token.json"
+    - "youtube/token_new_channel.json"
 
 instagram:
   # Official Meta Graph API (Instagram content publishing) — no browser bots, no scraping.

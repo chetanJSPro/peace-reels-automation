@@ -52,10 +52,15 @@ jobs:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           YOUTUBE_CLIENT_SECRET_JSON: ${{ secrets.YOUTUBE_CLIENT_SECRET_JSON }}
           YOUTUBE_TOKEN_JSON: ${{ secrets.YOUTUBE_TOKEN_JSON }}
+          # Second channel's login (config.yaml's upload.token_files fans every upload out to
+          # both). Same OAuth app/client_secret.json as the first channel -- only the token
+          # differs, since that's what was produced by logging into the second account.
+          YOUTUBE_TOKEN_JSON_NEW_CHANNEL: ${{ secrets.YOUTUBE_TOKEN_JSON_NEW_CHANNEL }}
         run: |
           mkdir -p youtube
           printf '%s' "$YOUTUBE_CLIENT_SECRET_JSON" > youtube/client_secret.json
           printf '%s' "$YOUTUBE_TOKEN_JSON" > youtube/token.json
+          printf '%s' "$YOUTUBE_TOKEN_JSON_NEW_CHANNEL" > youtube/token_new_channel.json
           {
             echo "PIXABAY_API_KEY=$PIXABAY_API_KEY"
             echo "PEXELS_API_KEY=$PEXELS_API_KEY"

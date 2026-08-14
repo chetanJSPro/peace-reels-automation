@@ -184,7 +184,7 @@ def _recent_jobs(limit: int = 12) -> list[dict]:
                 "title": meta.get("title", job_dir.name),
                 "location_label": meta.get("location_label", ""),
                 "duration_seconds": meta.get("duration_seconds"),
-                "youtube_video_id": meta.get("youtube_video_id"),
+                "youtube_video_ids": meta.get("youtube_video_ids") or {},
                 "has_thumbnail": (job_dir / "thumbnail.jpg").exists(),
             }
         )
@@ -283,7 +283,8 @@ function renderJobs(jobs) {
   const el = document.getElementById('jobs');
   el.innerHTML = jobs.map(j => {
     const thumb = j.has_thumbnail ? `/media/${j.job_dir}/thumbnail.jpg` : '';
-    const link = j.youtube_video_id ? `https://youtube.com/watch?v=${j.youtube_video_id}` : null;
+    const ids = Object.values(j.youtube_video_ids || {});
+    const link = ids.length ? `https://youtube.com/watch?v=${ids[0]}` : null;
     const titleHtml = link ? `<a href="${link}" target="_blank">${j.title}</a>` : j.title;
     return `<div class="card">
       ${thumb ? `<img src="${thumb}">` : ''}

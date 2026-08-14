@@ -80,19 +80,24 @@ def resumable_upload(request):
     return response
 
 
-def upload_from_metadata(metadata_json: str | Path, cfg: dict[str, Any]) -> str:
+def upload_from_metadata(metadata_json: str | Path, cfg: dict[str, Any], token_file_override: str | Path | None = None) -> str:
     """Official YouTube Data API upload.
 
     Important: Google states videos uploaded through unverified API projects created after
     2020-07-28 are restricted to private viewing mode until the project passes an API audit.
     Use this script for private drafts first; do not attempt unofficial upload bypasses.
+
+    `token_file_override` picks which channel to publish to (all channels share the same
+    OAuth app/client_secret.json -- only the token file, tied to whichever account completed
+    the login flow, determines the destination channel). Used by upload_to_all_channels() to
+    fan the same rendered video out to multiple channels.
     """
     root = project_root()
     data = json.loads(Path(metadata_json).read_text(encoding="utf-8"))
     upload_cfg = cfg.get("upload", {})
 
     client_secrets = os.getenv("YOUTUBE_CLIENT_SECRETS") or cfg.get("youtube_client_secrets") or "client_secret.json"
-    token_file = os.getenv("YOUTUBE_TOKEN_FILE") or cfg.get("youtube_token_file") or "token.json"
+    token_file = token_file_override or os.getenv("YOUTUBE_TOKEN_FILE") or cfg.get("youtube_token_file") or "token.json"
     client_secrets_path = resolve_path(root, client_secrets)
     token_path = resolve_path(root, token_file)
     if not client_secrets_path or not client_secrets_path.exists():
@@ -156,6 +161,25 @@ def upload_from_metadata(metadata_json: str | Path, cfg: dict[str, Any]) -> str:
             print(f"Captions upload skipped (video is still live): {e}")
 
     return video_id
+
+
+def upload_to_all_channels(metadata_json: str | Path, cfg: dict[str, Any]) -> dict[str, str]:
+    """Upload the same rendered video to every channel listed in config.yaml's
+    upload.token_files (defaults to a single channel via the normal env/config token lookup
+    if that list isn't set). Returns {token_file: video_id}; one channel's upload failing
+    doesn't block the others -- each is independent, so a bad token for a new channel
+    shouldn't prevent the established channel's regular upload."""
+    upload_cfg = cfg.get("upload", {})
+    token_files = upload_cfg.get("token_files") or [None]
+    results: dict[str, str] = {}
+    for token_file in token_files:
+        label = str(token_file) if token_file else "(default channel)"
+        try:
+            video_id = upload_from_metadata(metadata_json, cfg, token_file_override=token_file)
+            results[label] = video_id
+        except Exception as e:
+            print(f"Upload to {label} failed: {e}")
+    return results
 
 
 def main() -> None:

@@ -277,10 +277,10 @@ def main() -> None:
 
     upload_cfg = cfg.get("upload", {})
     if upload_cfg.get("enabled"):
-        from uploader import upload_from_metadata
+        from uploader import upload_to_all_channels
 
-        youtube_video_id = upload_from_metadata(job_dir / "metadata.json", cfg)
-        metadata["youtube_video_id"] = youtube_video_id
+        youtube_video_ids = upload_to_all_channels(job_dir / "metadata.json", cfg)
+        metadata["youtube_video_ids"] = youtube_video_ids
         (job_dir / "metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
 
     # Instagram publishing needs the rendered video pushed to the public repo first (the Graph
