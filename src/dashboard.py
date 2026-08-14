@@ -67,6 +67,45 @@ try {{
         log_lines.append(f"(notification failed: {e})")
 
 
+def _git(args: list[str]) -> subprocess.CompletedProcess:
+    return subprocess.run(["git", *args], cwd=str(ROOT), text=True, capture_output=True)
+
+
+def _pull_latest_rotation_state() -> None:
+    """Sync data/state.json from GitHub before generating. The cloud scheduler
+    (.github/workflows/publish.yml) advances and pushes its own copy of this file after every
+    run; without this, a desktop batch continues from whatever stale rotation position this
+    machine last saw and can walk the same early slot positions the cloud side already used,
+    reposting the same script (this was confirmed as the cause of same-story repeats across
+    cloud + desktop uploads)."""
+    log_lines.append("--- syncing rotation state from GitHub ---")
+    r = _git(["fetch", "origin"])
+    if r.returncode != 0:
+        log_lines.append(f"(git fetch failed, continuing with local rotation state: {r.stderr.strip()})")
+        return
+    r = _git(["checkout", "origin/main", "--", "data/state.json"])
+    if r.returncode != 0:
+        log_lines.append(f"(could not sync data/state.json from origin: {r.stderr.strip()})")
+
+
+def _push_rotation_state() -> None:
+    """Commit + push data/state.json after generating, mirroring the cloud workflow's own
+    'Commit topic-rotation state' step, so the next run anywhere sees this batch's advance."""
+    _git(["add", "data/state.json"])
+    commit = _git(["commit", "-m", "Auto: advance topic rotation (desktop)"])
+    if commit.returncode != 0:
+        return  # nothing changed
+    r = _git(["pull", "--rebase", "origin", "main"])
+    if r.returncode != 0:
+        log_lines.append(f"(git pull --rebase failed, rotation state not synced to GitHub: {r.stderr.strip()})")
+        return
+    r = _git(["push"])
+    if r.returncode != 0:
+        log_lines.append(f"(git push failed, rotation state not synced to GitHub: {r.stderr.strip()})")
+    else:
+        log_lines.append("--- rotation state synced to GitHub ---")
+
+
 def _run_one(video_num: int, time_slot: str) -> bool:
     log_lines.append(f"--- video {video_num}/{VIDEOS_PER_RUN} started (slot={time_slot}) ---")
     try:
@@ -98,6 +137,7 @@ def _run_job() -> None:
         state["last_error"] = None
         state["progress"] = f"0/{VIDEOS_PER_RUN}"
     log_lines.append(f"--- batch started {time.strftime('%Y-%m-%d %H:%M:%S')}: {VIDEOS_PER_RUN} videos ---")
+    _pull_latest_rotation_state()
 
     succeeded = 0
     for i in range(1, VIDEOS_PER_RUN + 1):
@@ -105,6 +145,8 @@ def _run_job() -> None:
         succeeded += 1 if ok else 0
         with state_lock:
             state["progress"] = f"{succeeded}/{VIDEOS_PER_RUN}"
+        if ok:
+            _push_rotation_state()
     failed = VIDEOS_PER_RUN - succeeded
 
     with state_lock:
