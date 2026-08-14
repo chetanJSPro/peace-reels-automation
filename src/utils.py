@@ -181,6 +181,31 @@ def ist_now_minutes() -> int:
     return now.hour * 60 + now.minute
 
 
+def recent_clip_ids(state_path: str | Path, source: str) -> set[str]:
+    """IDs of stock clips downloaded in recent runs for `source` (e.g. "pixabay"/"pexels"),
+    so a fresh run can steer away from them instead of re-picking the same top-ranked
+    results from a small niche query pool every time (was the main cause of the same
+    handful of clips appearing in nearly every generated video regardless of topic)."""
+    state = read_json(state_path, {})
+    return set(state.get("used_clip_ids", {}).get(source, []))
+
+
+def record_clip_ids(state_path: str | Path, source: str, ids: Iterable[str], cap: int = 400) -> None:
+    """Append newly-used clip IDs to the persisted history for `source`, most-recent last,
+    capped to the last `cap` so old exclusions age out and a finite query pool can still be
+    reused eventually rather than permanently blacklisted."""
+    state = read_json(state_path, {})
+    used = state.get("used_clip_ids") or {}
+    lst = used.get(source, [])
+    for i in ids:
+        if i in lst:
+            lst.remove(i)
+        lst.append(i)
+    used[source] = lst[-cap:]
+    state["used_clip_ids"] = used
+    write_json(state_path, state)
+
+
 def next_rotating_index_for_key(state_path: str | Path, key: str, count: int) -> int:
     """Like next_rotating_index, but keeps an independent round-robin pointer per `key` (e.g. a
     time-of-day content slot) under state["slot_index"][key], so each slot's topic pool cycles

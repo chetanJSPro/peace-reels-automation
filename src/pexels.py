@@ -18,6 +18,7 @@ class DownloadedVideo:
     path: Path
     credit: str
     source_url: str
+    clip_id: str
 
 
 def _best_video_file(video: dict[str, Any], portrait: bool = True) -> dict[str, Any] | None:
@@ -76,9 +77,14 @@ def fetch_videos_for_queries(
     *,
     max_downloads: int = 6,
     orientation: str = "portrait",
+    exclude_ids: set[str] | None = None,
 ) -> list[DownloadedVideo]:
     out: list[DownloadedVideo] = []
     seen_ids: set[str] = set()
+    exclude_ids = exclude_ids or set()
+    # See pixabay.py's fetch_videos_for_queries for why: recently-used clips are parked here and
+    # only used as a last resort so a thin query pool doesn't fail the render.
+    fallback: list[tuple[str, dict[str, Any], str, str]] = []
     shuffled_queries = list(queries)
     random.shuffle(shuffled_queries)
     for q in shuffled_queries:
@@ -102,14 +108,29 @@ def fetch_videos_for_queries(
             best = _best_video_file(v, portrait=(orientation == "portrait"))
             if not best:
                 continue
-            seen_ids.add(vid)
             user = (v.get("user") or {}).get("name", "Pexels creator")
             credit = f"Pexels video by {user}: {page_url}"
+            if vid in exclude_ids:
+                fallback.append((vid, best, credit, page_url))
+                continue
+            seen_ids.add(vid)
             path = Path(downloads_dir) / f"pexels_{vid}.mp4"
             try:
                 download_file(best["link"], path)
-                out.append(DownloadedVideo(path=path, credit=credit, source_url=page_url))
+                out.append(DownloadedVideo(path=path, credit=credit, source_url=page_url, clip_id=vid))
                 time.sleep(0.2)
             except Exception as e:
                 print(f"Download failed for {page_url}: {e}")
+
+    for vid, best, credit, page_url in fallback:
+        if len(out) >= max_downloads:
+            break
+        seen_ids.add(vid)
+        path = Path(downloads_dir) / f"pexels_{vid}.mp4"
+        try:
+            download_file(best["link"], path)
+            out.append(DownloadedVideo(path=path, credit=credit, source_url=page_url, clip_id=vid))
+            time.sleep(0.2)
+        except Exception as e:
+            print(f"Download failed for {page_url}: {e}")
     return out

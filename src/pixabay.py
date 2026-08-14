@@ -19,6 +19,7 @@ class DownloadedVideo:
     path: Path
     credit: str
     source_url: str
+    clip_id: str
 
 
 def _best_video_file(video: dict[str, Any], portrait: bool = True) -> dict[str, Any] | None:
@@ -65,9 +66,16 @@ def fetch_videos_for_queries(
     *,
     max_downloads: int = 6,
     orientation: str = "portrait",
+    exclude_ids: set[str] | None = None,
 ) -> list[DownloadedVideo]:
     out: list[DownloadedVideo] = []
     seen_ids: set[str] = set()
+    exclude_ids = exclude_ids or set()
+    # Clips that matched but were used recently (per exclude_ids) get parked here instead of
+    # downloaded immediately, and only pulled in as a last resort if the fresh, never-used pool
+    # can't fill the quota — niche queries (e.g. "Ganga Ghat") often return few candidates, so
+    # this keeps footage fresh run-to-run without ever failing a render over it.
+    fallback: list[tuple[str, dict[str, Any], str, str]] = []
     # Shuffle query order so a topic with several queries doesn't always exhaust the same first
     # ones before hitting max_downloads, and pull a bigger page + shuffle it so repeat runs of
     # the same topic don't always land on the same top-ranked results (was the main cause of
@@ -94,15 +102,30 @@ def fetch_videos_for_queries(
             best = _best_video_file(v, portrait=(orientation == "portrait"))
             if not best:
                 continue
-            seen_ids.add(vid)
             user = v.get("user", "Pixabay creator")
             page_url = v.get("pageURL") or f"https://pixabay.com/videos/id-{vid}/"
             credit = f"Pixabay video by {user}: {page_url}"
+            if vid in exclude_ids:
+                fallback.append((vid, best, credit, page_url))
+                continue
+            seen_ids.add(vid)
             path = Path(downloads_dir) / f"pixabay_{vid}.mp4"
             try:
                 download_file(best["url"], path)
-                out.append(DownloadedVideo(path=path, credit=credit, source_url=page_url))
+                out.append(DownloadedVideo(path=path, credit=credit, source_url=page_url, clip_id=vid))
                 time.sleep(0.2)
             except Exception as e:
                 print(f"Download failed for {page_url}: {e}")
+
+    for vid, best, credit, page_url in fallback:
+        if len(out) >= max_downloads:
+            break
+        seen_ids.add(vid)
+        path = Path(downloads_dir) / f"pixabay_{vid}.mp4"
+        try:
+            download_file(best["url"], path)
+            out.append(DownloadedVideo(path=path, credit=credit, source_url=page_url, clip_id=vid))
+            time.sleep(0.2)
+        except Exception as e:
+            print(f"Download failed for {page_url}: {e}")
     return out

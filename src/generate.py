@@ -32,6 +32,8 @@ from utils import (
     next_rotating_index_for_key,
     now_stamp,
     project_root,
+    record_clip_ids,
+    recent_clip_ids,
     resolve_path,
     slugify,
 )
@@ -78,6 +80,7 @@ def main() -> None:
     fps = int(fmt.get("fps", 30))
     clip_seconds = float(fmt.get("clip_seconds", 5))
     ideas_csv = resolve_path(root, content_cfg.get("ideas_csv", "data/ideas.csv"))
+    state_path = resolve_path(root, content_cfg.get("state_file", "data/state.json"))
 
     if args.topic_index is not None:
         topic_index = args.topic_index
@@ -88,7 +91,6 @@ def main() -> None:
         # now (morning intention-setting, lunch-break reflection, evening wind-down) instead of
         # picking from the full list regardless of time — each slot rotates its own pool
         # independently via next_rotating_index_for_key, so it doesn't repeat within itself.
-        state_path = resolve_path(root, content_cfg.get("state_file", "data/state.json"))
         ideas = load_ideas(ideas_csv)
         slot = args.time_slot or current_slot(content_cfg.get("time_slots") or {}, ist_now_minutes())
         candidate_indices = topic_indices_for_slot(ideas, slot)
@@ -186,9 +188,13 @@ def main() -> None:
             downloads_dir,
             max_downloads=max_downloads,
             orientation=orientation,
+            # Steer away from clips used in recent runs so the same handful of top-ranked
+            # results for a niche query don't end up in nearly every video regardless of topic.
+            exclude_ids=recent_clip_ids(state_path, "pixabay"),
         )
         video_paths = [d.path for d in downloaded] + video_paths
         credits.extend(d.credit for d in downloaded)
+        record_clip_ids(state_path, "pixabay", [d.clip_id for d in downloaded])
 
     if use_stock and os.getenv("PEXELS_API_KEY") and len(video_paths) < max_downloads:
         downloads_dir = resolve_path(root, visuals_cfg.get("downloads_dir", "assets/videos/pexels")) or root / "assets/videos/pexels"
@@ -197,9 +203,11 @@ def main() -> None:
             downloads_dir,
             max_downloads=max_downloads - len(video_paths),
             orientation=orientation,
+            exclude_ids=recent_clip_ids(state_path, "pexels"),
         )
         video_paths = [d.path for d in downloaded] + video_paths
         credits.extend(d.credit for d in downloaded)
+        record_clip_ids(state_path, "pexels", [d.clip_id for d in downloaded])
 
     # The local scan (rglob) can also pick up files inside the pixabay/pexels download
     # subfolders, and re-running the same queries can re-resolve the same cached file — dedupe
