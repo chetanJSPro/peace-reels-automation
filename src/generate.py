@@ -100,26 +100,39 @@ def main() -> None:
         topic_index = int(content_cfg.get("topic_index", 0))
 
     idea = choose_idea(ideas_csv, topic_index=topic_index)
-    hashtags = meta_cfg.get("hashtags", ["#meditation", "#innerpeace", "#shorts"])
-    if content_cfg.get("use_ollama"):
-        pkg = package_with_ollama(idea, hashtags, lines_per_short=int(content_cfg.get("lines_per_short", 5)))
-    else:
-        pkg = package_from_idea(idea, hashtags, lines_per_short=int(content_cfg.get("lines_per_short", 5)))
 
-    job_name = f"{now_stamp()}_{slugify(pkg.topic)}"
-    out_root = resolve_path(root, cfg.get("project", {}).get("output_dir", "output")) or root / "output"
-    job_dir = ensure_dir(out_root / job_name)
-    work_dir = ensure_dir(job_dir / "work")
-
+    # Resolve the visual/location *before* packaging the script, so the title/tags can carry the
+    # hashtag that actually matches what's on screen (e.g. #kedarnath when Kedarnath footage was
+    # picked) instead of a fixed config-wide tag that used to say "#rishikesh" on every video
+    # regardless of location -- a real relevance mismatch between the tag and the content.
     locations_csv = resolve_path(root, content_cfg.get("locations_csv", "data/locations.csv"))
     visual_style = topic_visual_style(
-        pkg.topic,
+        idea.get("topic", "inner_peace"),
         locations_csv,
         fallback_label=style.get("location_label", "RISHIKESH | UTTARAKHAND"),
         fallback_pixabay_queries=visuals_cfg.get("pixabay_queries") or ["Rishikesh Ganga India"],
         fallback_pexels_queries=visuals_cfg.get("pexels_queries") or ["Rishikesh Ganga river India vertical"],
     )
     location_label = visual_style["location_label"]
+
+    base_hashtags = meta_cfg.get("hashtags", ["#meditation", "#innerpeace", "#shorts"])
+    location_hashtag = visual_style["hashtag"]
+    hashtags = base_hashtags + ([location_hashtag] if location_hashtag and location_hashtag not in base_hashtags else [])
+    title_tag = location_hashtag or (base_hashtags[0] if base_hashtags else "")
+
+    if content_cfg.get("use_ollama"):
+        pkg = package_with_ollama(
+            idea, hashtags, lines_per_short=int(content_cfg.get("lines_per_short", 5)), title_tag=title_tag
+        )
+    else:
+        pkg = package_from_idea(
+            idea, hashtags, lines_per_short=int(content_cfg.get("lines_per_short", 5)), title_tag=title_tag
+        )
+
+    job_name = f"{now_stamp()}_{slugify(pkg.topic)}"
+    out_root = resolve_path(root, cfg.get("project", {}).get("output_dir", "output")) or root / "output"
+    job_dir = ensure_dir(out_root / job_name)
+    work_dir = ensure_dir(job_dir / "work")
     script_txt = job_dir / "script.txt"
     script_txt.write_text(pkg.narration_text, encoding="utf-8")
 

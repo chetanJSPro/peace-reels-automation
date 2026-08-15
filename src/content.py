@@ -167,6 +167,7 @@ def topic_visual_style(
             "location_label": fallback_label,
             "pixabay_queries": fallback_pixabay_queries,
             "pexels_queries": fallback_pexels_queries,
+            "hashtag": "",
         }
     terms = [t.strip() for t in (place.get("search_terms") or "").split(",") if t.strip()]
     return {
@@ -174,6 +175,10 @@ def topic_visual_style(
         # Keep one generic fallback query alongside the place-specific ones for extra pool variety.
         "pixabay_queries": terms + fallback_pixabay_queries[-1:],
         "pexels_queries": [f"{t} India vertical" for t in terms] + fallback_pexels_queries[-1:],
+        # Ties the title/tags to whatever place is actually on screen, instead of a fixed
+        # config-wide hashtag list that used to put "#rishikesh" on every video regardless of
+        # whether the footage was Kashi, Kedarnath, or anywhere else.
+        "hashtag": place.get("hashtag") or "",
     }
 
 
@@ -184,7 +189,9 @@ def choose_idea(csv_path: str | Path, topic_index: int = 0) -> dict[str, str]:
     return ideas[topic_index % len(ideas)]
 
 
-def package_from_idea(idea: dict[str, str], hashtags: list[str], lines_per_short: int = 5) -> ScriptPackage:
+def package_from_idea(
+    idea: dict[str, str], hashtags: list[str], lines_per_short: int = 5, title_tag: str | None = None
+) -> ScriptPackage:
     lines = []
     for i in range(1, 8):
         v = (idea.get(f"line{i}") or "").strip()
@@ -192,7 +199,11 @@ def package_from_idea(idea: dict[str, str], hashtags: list[str], lines_per_short
             lines.append(v)
     lines = lines[:lines_per_short]
     title_base = idea.get("title_base") or idea.get("hook") or idea.get("topic") or "Inner Peace"
-    clean_hash = " ".join(hashtags[:4])
+    # A title stuffed with several hashtags reads as spam and eats into the ~60-char mobile
+    # display budget that should go to the actual hook/keyword. One hashtag -- the one that
+    # actually matches the footage on screen -- is enough; the rest live in tags/description,
+    # which is where YouTube's Shorts SEO guidance says hashtag volume belongs, not the title.
+    clean_hash = title_tag or (hashtags[0] if hashtags else "")
     title = f"{title_base} 🕊 {clean_hash}".strip()
     return ScriptPackage(
         topic=idea.get("topic", "inner_peace"),
@@ -211,7 +222,9 @@ def _ollama_generate(prompt: str, model: str, base_url: str) -> str:
     return r.json().get("response", "")
 
 
-def package_with_ollama(idea: dict[str, str], hashtags: list[str], lines_per_short: int = 5) -> ScriptPackage:
+def package_with_ollama(
+    idea: dict[str, str], hashtags: list[str], lines_per_short: int = 5, title_tag: str | None = None
+) -> ScriptPackage:
     """Optional fully-free local LLM script generator via Ollama.
 
     Use this only if you have Ollama installed and a local model downloaded. The prompt explicitly
@@ -243,16 +256,23 @@ Each line max 75 characters. Make it human and emotionally true.
     }
     for i, line in enumerate(data.get("lines", [])[:lines_per_short], 1):
         idea2[f"line{i}"] = str(line)
-    return package_from_idea(idea2, hashtags, lines_per_short)
+    return package_from_idea(idea2, hashtags, lines_per_short, title_tag=title_tag)
 
 
 def build_description(pkg: ScriptPackage, location_label: str, credits: list[str], disclosure: str = "") -> str:
     tags = " ".join(pkg.hashtags)
     credit_block = "\n".join(f"- {c}" for c in credits) if credits else "- Own/licensed footage and audio."
     disclosure_block = f"\n\nDisclosure: {disclosure}" if disclosure else ""
+    # Longer, keyword-natural description (not stuffed) so YouTube's search indexing has more to
+    # match against -- the old one-line description was well under what Shorts SEO guidance
+    # recommends. Quotes the actual narration so the description reflects this video's specific
+    # message, not just generic boilerplate repeated on every upload.
+    message_snippet = " ".join([pkg.hook, *pkg.lines[:2]])
     return f"""{pkg.title}
 
-A short peaceful thought from {location_label}. Pause, breathe, and return to yourself.
+{message_snippet}
+
+A short Hindi spiritual reflection and daily peace quote, filmed at {location_label}. Inner peace, mindfulness, and calm for your day -- pause, breathe, and return to yourself. Part of a daily series of Hindi motivational shorts, meditation quotes, and peaceful thoughts inspired by India's sacred rivers, temples, and mountains.
 
 {tags}
 

@@ -93,11 +93,13 @@ voice:
   pause_seconds: 0.15     # small gap only, mostly relying on Kokoro's own natural per-line gap
 
 metadata:
+  # Generic tags applied to every video. The location-specific tag (#rishikesh, #kashi,
+  # #kedarnath, etc.) is now added automatically based on which place's footage actually got
+  # used -- see data/locations.csv's hashtag column -- instead of being hardcoded here for
+  # every video regardless of location.
   hashtags:
     - "#meditation"
     - "#innerpeace"
-    - "#rishikesh"
-    - "#ganga"
     - "#shorts"
   category_id: "22"       # People & Blogs; consider 27 Education for educational guides.
   made_for_kids: false
@@ -109,13 +111,13 @@ upload:
   publish_at: ""              # ISO time, e.g. 2026-08-01T18:30:00+05:30; requires privacy_status=private
   upload_thumbnail: true
   upload_captions: true
-  # Every generated video is uploaded once per entry here. All channels share the same OAuth
-  # app (youtube/client_secret.json) -- each token file just represents a different completed
-  # login, so this fans the same render out to multiple channels. One channel failing (bad/
-  # expired token) doesn't block the others.
+  # Reverted 2026-08-15: fanning the same render out to two channels posts byte-identical
+  # video/title/description/thumbnail from both, which trips YouTube's reused/duplicate-content
+  # enforcement across channels linked to the same creator -- this is the suspected cause of
+  # views dropping to ~0 on both channels right after this was enabled. Back to a single
+  # channel until the two channels are actually differentiated (distinct content, not fan-out).
   token_files:
     - "youtube/token.json"
-    - "youtube/token_new_channel.json"
 
 instagram:
   # Official Meta Graph API (Instagram content publishing) — no browser bots, no scraping.

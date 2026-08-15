@@ -99,7 +99,7 @@ INDIA_ALLOWLIST = [
     "india", "indian", "bharat", "ganga", "ganges", "himalaya", "himalayan",
     "rishikesh", "varanasi", "kashi", "haridwar", "uttarakhand", "uttar pradesh",
     "ashram", "ghat", "sadhu", "yogi", "yoga", "hindu", "hinduism", "mumbai", "delhi",
-    "kerala", "rajasthan", "punjab", "goa", "taj mahal", "monsoon", "himachal",
+    "kerala", "rajasthan", "punjab", "goa", "monsoon", "himachal",
 ]
 FOREIGN_LOCATION_BLOCKLIST = [
     "usa", "america", "united states", "san francisco", "golden gate", "new york",
@@ -111,14 +111,33 @@ FOREIGN_LOCATION_BLOCKLIST = [
     "africa", "mexico", "russia", "brazil", "thailand", "vietnam", "indonesia",
     "philippines", "turkey", "egypt", "dubai", "uae",
 ]
+# Clips that are genuinely "India" but not the calm nature/temple/river visual this channel is
+# built on -- these were slipping through because the old filter only checked country, not
+# theme (a "india, wildlife, safari" or "india, street food" clip mentions India and passed).
+# That produced mismatched b-roll like Taj Mahal tourism shots, wildlife/safari clips, and
+# cooking footage cut in under a peaceful meditation narration.
+OFF_THEME_BLOCKLIST = [
+    "wildlife", "safari", "tiger", "lion", "elephant", "zoo", "animal", "bird sanctuary",
+    "cooking", "recipe", "kitchen", "restaurant", "street food", "food stall", "chicken",
+    "curry", "spice market",
+    "traffic", "highway", "car", "motorbike", "auto rickshaw", "railway station", "airport",
+    "cricket", "bollywood", "wedding", "festival crowd", "nightclub", "party",
+    "stock market", "office", "corporate", "factory", "construction",
+    # Real, commonly-tagged Indian landmarks/scenes that aren't in data/locations.csv's mapped
+    # set and don't fit the calm nature/temple/river visual.
+    "taj mahal", "agra", "monument", "fort", "palace", "city skyline", "metro city",
+]
 
 
 def is_relevant_india_content(tags: str) -> bool:
     """True only when the candidate's own tags positively indicate Indian content (or provide
-    no tags at all to judge by), and don't mention a known-wrong country/landmark. Use this when
-    the source gives rich descriptive tags (e.g. Pixabay)."""
+    no tags at all to judge by), don't mention a known-wrong country/landmark, and aren't an
+    off-theme category (wildlife, food, traffic, etc.) that happens to also mention India. Use
+    this when the source gives rich descriptive tags (e.g. Pixabay)."""
     t = (tags or "").lower()
     if any(bad in t for bad in FOREIGN_LOCATION_BLOCKLIST):
+        return False
+    if any(bad in t for bad in OFF_THEME_BLOCKLIST):
         return False
     if not t.strip():
         return True  # no metadata to judge by — can't penalize missing tags
@@ -128,9 +147,10 @@ def is_relevant_india_content(tags: str) -> bool:
 def mentions_foreign_place(text: str) -> bool:
     """Blocklist-only check for sources that only give sparse text (e.g. a Pexels page-URL
     slug) — too little text to fairly require positive India evidence, but still worth
-    rejecting an obvious wrong-country match."""
+    rejecting an obvious wrong-country match or an off-theme category (wildlife/food/traffic/
+    etc.) that the URL slug happens to describe."""
     t = (text or "").lower()
-    return any(bad in t for bad in FOREIGN_LOCATION_BLOCKLIST)
+    return any(bad in t for bad in FOREIGN_LOCATION_BLOCKLIST) or any(bad in t for bad in OFF_THEME_BLOCKLIST)
 
 
 def dedupe_paths(paths: Iterable[str | Path]) -> list[Path]:
