@@ -101,8 +101,7 @@ def write_ass(
 ) -> Path:
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
-    pin = "📍 " if use_location_pin else ""
-    loc_text = escape_ass(pin + location_label)
+    loc_text = escape_ass("📍 " + location_label)
     header = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {width}
@@ -120,7 +119,13 @@ Style: Small,{caption_font},42,&H00FFFFFF,&H000000FF,&H00101010,&HAA000000,0,0,0
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     events = [header]
-    events.append(f"Dialogue: 2,{ass_time(0)},{ass_time(duration)},Location,,0,0,0,,{{\\fad(400,400)}}{loc_text}\n")
+    if use_location_pin:
+        # Previously this banner was drawn unconditionally regardless of the flag -- only the
+        # pin emoji was toggled -- so callers that set use_location_pin=False (e.g. car edits,
+        # which has no location banner concept at all) still got a burned-in banner, defaulting
+        # to write_ass's own "RISHIKESH | UTTARAKHAND" placeholder since they had no location to
+        # pass. Now the whole Dialogue event is skipped, not just its pin emoji.
+        events.append(f"Dialogue: 2,{ass_time(0)},{ass_time(duration)},Location,,0,0,0,,{{\\fad(400,400)}}{loc_text}\n")
     for seg in segments:
         txt = escape_ass(wrap_for_ass(seg.text))
         # \fad and slight scale give a modern Shorts subtitle feel.
