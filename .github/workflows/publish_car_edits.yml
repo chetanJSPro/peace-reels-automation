@@ -1,0 +1,58 @@
+name: Car Edits 24x7 automation
+
+# Separate workflow, separate channel (Neeli Pahadi gamer) -- runs independently of Peace Reels'
+# publish.yml and never touches its config, secrets, or state. Cadence: 2 videos/day, offset from
+# Peace Reels' three slots so both workflows aren't hammering the same runner queue at once.
+# Cron is UTC; IST = UTC + 5:30.
+on:
+  schedule:
+    - cron: "0 4 * * *"    # 09:30 IST
+    - cron: "30 12 * * *"  # 18:00 IST - evening scroll window
+  workflow_dispatch: {}    # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: read
+
+concurrency:
+  group: car-edits-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install system dependencies (ffmpeg)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Restore credentials from secrets
+        env:
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+          YOUTUBE_CLIENT_SECRET_JSON: ${{ secrets.YOUTUBE_CLIENT_SECRET_JSON }}
+          # Neeli Pahadi gamer's login -- same OAuth app/client_secret.json as the Peace Reels
+          # channels, only the token differs (that's what a separate account's login produces).
+          YOUTUBE_TOKEN_JSON_CAR_EDITS: ${{ secrets.YOUTUBE_TOKEN_JSON_CAR_EDITS }}
+        run: |
+          mkdir -p youtube
+          printf '%s' "$YOUTUBE_CLIENT_SECRET_JSON" > youtube/client_secret.json
+          printf '%s' "$YOUTUBE_TOKEN_JSON_CAR_EDITS" > youtube/token_new_channel.json
+          {
+            echo "PIXABAY_API_KEY=$PIXABAY_API_KEY"
+            echo "PEXELS_API_KEY=$PEXELS_API_KEY"
+          } > .env
+
+      - name: Generate video and upload to YouTube
+        run: python src/generate_edits.py --config config.car_edits.yaml

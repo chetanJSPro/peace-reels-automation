@@ -10,11 +10,13 @@ __pycache__/
 # Downloaded stock footage caches — re-fetched from Pixabay/Pexels each run, no need to version.
 assets/videos/pixabay/
 assets/videos/pexels/
+assets/videos/car_edits/
 
 # Generated videos never need to enter git: YouTube gets them via direct API upload, Instagram
 # gets them via a GitHub Release asset uploaded straight from the runner's local disk. Keeping
 # rendered video out of git history entirely avoids the repo growing forever with binary blobs.
 output/
+output_edits/
 
 # Stray local test renders sitting at the project root (not part of the structured output/ tree).
 /final_video*.mp4

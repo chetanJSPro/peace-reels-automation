@@ -1,0 +1,49 @@
+project:
+  output_dir: "output_edits"
+
+format:
+  width: 1080
+  height: 1920
+  fps: 30
+  target_seconds: 22   # edits perform better shorter/tighter than the 45-60s peace-reels format
+
+visuals:
+  scenes_csv: "data/car_scenes.csv"
+  source: "auto"
+  max_downloads: 10       # more, shorter clips than peace_reels since cuts land on beats
+  orientation: "portrait"
+  pixabay_downloads_dir: "assets/videos/car_edits/pixabay"
+  pexels_downloads_dir: "assets/videos/car_edits/pexels"
+
+music:
+  # Drop 2-5 royalty-free / explicitly free-to-use tracks here yourself (e.g. YouTube Audio
+  # Library -> filter Genre: Electronic/dark, or any producer's explicitly-licensed free beats).
+  # This pipeline won't auto-download audio -- licensing needs a human check per track.
+  dir: "assets/music/car_edits"
+  volume: 1.0   # no narration to duck under, music IS the audio track
+
+beat_sync:
+  cut_every_n_beats: 2   # cut on every 2nd beat; 1 = a cut on every single beat (very frantic)
+  min_cut_seconds: 0.35
+  max_cut_seconds: 3.0   # caps how long any single shot can stay on screen, even if beat detection is sparse
+  flash_every_n_cuts: 4  # white flash-cut punctuation every Nth cut; 0 disables it
+
+style:
+  caption_font: "Arial"
+  caption_font_size: 100
+
+metadata:
+  hashtags:
+    - "#caredit"
+    - "#cars"
+    - "#shorts"
+  category_id: "2"        # Autos & Vehicles
+  made_for_kids: false
+
+upload:
+  enabled: true
+  privacy_status: "public"
+  upload_thumbnail: true
+  upload_captions: false   # no spoken narration to caption
+  token_files:
+    - "youtube/token_new_channel.json"   # confirmed via API: authenticated to "Neeli Pahadi gamer"

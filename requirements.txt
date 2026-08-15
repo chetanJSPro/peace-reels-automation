@@ -10,6 +10,9 @@ soundfile>=0.12.1
 # Local, free/open TTS. Requires espeak-ng installed on the OS.
 kokoro>=0.9.4
 
+# Beat detection for the car-edits channel (src/generate_edits.py / src/beat_sync.py).
+librosa>=1.0.0
+
 # Official YouTube upload automation (optional; only use after OAuth setup/API audit notes in README)
 google-api-python-client>=2.140.0
 google-auth-oauthlib>=1.2.1

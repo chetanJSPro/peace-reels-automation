@@ -108,7 +108,7 @@ def build_background(
 
 def build_final_video(
     background: str | Path,
-    narration: str | Path,
+    narration: str | Path | None,
     ass_file: str | Path,
     out_path: str | Path,
     *,
@@ -119,6 +119,47 @@ def build_final_video(
     out = Path(out_path)
     out.parent.mkdir(parents=True, exist_ok=True)
     vf = f"ass={_ass_filter_path(ass_file)}"
+    if narration is None:
+        # Music-only videos (e.g. beat-synced edits with no voiceover): the music itself is the
+        # audio track, not a background bed mixed under narration.
+        if not music_path or not Path(music_path).exists():
+            raise ValueError("build_final_video needs either narration or music_path.")
+        cmd = [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(background),
+            "-stream_loop",
+            "-1",
+            "-i",
+            str(music_path),
+            "-filter_complex",
+            f"[1:a]volume={music_volume},atrim=0:{duration:.2f},asetpts=N/SR/TB[a]",
+            "-vf",
+            vf,
+            "-map",
+            "0:v:0",
+            "-map",
+            "[a]",
+            "-t",
+            f"{duration:.2f}",
+            "-c:v",
+            "libx264",
+            "-preset",
+            "medium",
+            "-crf",
+            "20",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-movflags",
+            "+faststart",
+            "-shortest",
+            str(out),
+        ]
+        run(cmd)
+        return out
     if music_path and Path(music_path).exists():
         cmd = [
             "ffmpeg",
@@ -239,10 +280,11 @@ def make_thumbnail(
     location_label: str,
     width: int = 1080,
     height: int = 1920,
+    at_seconds: float = 1.0,
 ) -> Path:
     work = Path(out_path).parent
     frame = work / "thumb_frame.png"
-    extract_frame(video_path, frame, at_seconds=1.0)
+    extract_frame(video_path, frame, at_seconds=at_seconds)
     img = Image.open(frame).convert("RGB").resize((width, height))
     overlay = Image.new("RGBA", img.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)

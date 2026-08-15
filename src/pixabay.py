@@ -60,6 +60,62 @@ def search_pixabay_videos(query: str, *, per_page: int = 12) -> list[dict[str, A
     return r.json().get("hits", [])
 
 
+def fetch_by_ids(
+    ids: list[str],
+    downloads_dir: str | Path,
+    *,
+    max_downloads: int | None = None,
+    orientation: str = "portrait",
+    exclude_ids: set[str] | None = None,
+) -> list["DownloadedVideo"]:
+    """Fetch specific, hand-picked Pixabay video IDs directly instead of a live keyword search.
+    Used where blind keyword search (or even popularity-sorted search) surfaces too many
+    off-theme clips -- e.g. a niche like car edits where the most-popular globally results for a
+    query are dominated by unrelated high-view content. The curated ID list itself is chosen by
+    reviewing real candidates ranked by Pixabay's views/downloads/likes (a genuine human-approval
+    signal), then hand-filtering out the mismatches automated keyword matching let through."""
+    key = os.getenv("PIXABAY_API_KEY")
+    if not key:
+        raise RuntimeError("PIXABAY_API_KEY is not set.")
+    exclude_ids = exclude_ids or set()
+    ids = [i for i in ids if i not in exclude_ids]
+    if max_downloads is not None:
+        ids = ids[:max_downloads]
+    if not ids:
+        return []
+    out: list[DownloadedVideo] = []
+    for single_id in ids:
+        # Pixabay's videos endpoint 400s on a comma-joined multi-ID "id" param despite that being
+        # documented elsewhere for their API -- one request per ID is the only combination that
+        # actually returns results.
+        try:
+            r = requests.get(
+                "https://pixabay.com/api/videos/", params={"key": key, "id": single_id}, timeout=30
+            )
+            r.raise_for_status()
+        except Exception as e:
+            print(f"Pixabay id lookup failed for {single_id}: {e}")
+            continue
+        hits = r.json().get("hits", [])
+        if not hits:
+            continue
+        v = hits[0]
+        vid = str(v.get("id"))
+        best = _best_video_file(v, portrait=(orientation == "portrait"))
+        if not best:
+            continue
+        user = v.get("user", "Pixabay creator")
+        page_url = v.get("pageURL") or f"https://pixabay.com/videos/id-{vid}/"
+        credit = f"Pixabay video by {user}: {page_url}"
+        path = Path(downloads_dir) / f"pixabay_{vid}.mp4"
+        try:
+            download_file(best["url"], path)
+            out.append(DownloadedVideo(path=path, credit=credit, source_url=page_url, clip_id=vid))
+        except Exception as e:
+            print(f"Download failed for {page_url}: {e}")
+    return out
+
+
 def fetch_videos_for_queries(
     queries: list[str],
     downloads_dir: str | Path,
@@ -67,7 +123,11 @@ def fetch_videos_for_queries(
     max_downloads: int = 6,
     orientation: str = "portrait",
     exclude_ids: set[str] | None = None,
+    relevance_check=is_relevant_india_content,
 ) -> list[DownloadedVideo]:
+    """`relevance_check` gates candidates by their Pixabay tags (rejects on False) -- defaults to
+    the India-content project's relevance filter. Pass None for niches with no such constraint
+    (e.g. a car-edits channel)."""
     out: list[DownloadedVideo] = []
     seen_ids: set[str] = set()
     exclude_ids = exclude_ids or set()
@@ -97,7 +157,7 @@ def fetch_videos_for_queries(
             vid = str(v.get("id"))
             if vid in seen_ids:
                 continue
-            if not is_relevant_india_content(v.get("tags", "")):
+            if relevance_check and not relevance_check(v.get("tags", "")):
                 continue
             best = _best_video_file(v, portrait=(orientation == "portrait"))
             if not best:

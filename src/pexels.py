@@ -78,7 +78,11 @@ def fetch_videos_for_queries(
     max_downloads: int = 6,
     orientation: str = "portrait",
     exclude_ids: set[str] | None = None,
+    blocklist_check=mentions_foreign_place,
 ) -> list[DownloadedVideo]:
+    """`blocklist_check` gates candidates by their page URL/slug (rejects on True) -- defaults to
+    the India-content project's foreign-place blocklist. Pass None for niches with no such
+    constraint (e.g. a car-edits channel, where footage isn't location-restricted)."""
     out: list[DownloadedVideo] = []
     seen_ids: set[str] = set()
     exclude_ids = exclude_ids or set()
@@ -103,7 +107,7 @@ def fetch_videos_for_queries(
             if vid in seen_ids:
                 continue
             page_url = v.get("url") or f"https://www.pexels.com/video/{vid}/"
-            if mentions_foreign_place(page_url):
+            if blocklist_check and blocklist_check(page_url):
                 continue
             best = _best_video_file(v, portrait=(orientation == "portrait"))
             if not best:
