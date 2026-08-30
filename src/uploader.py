@@ -56,7 +56,12 @@ def get_youtube_service(client_secrets_file: str | Path, token_file: str | Path)
                     time.sleep(wait)
         if not refreshed:
             flow = InstalledAppFlow.from_client_secrets_file(str(client_secrets_file), SCOPES)
-            creds = flow.run_local_server(port=8080)
+            # prompt="consent" forces Google to always hand back a refresh_token. Without
+            # it, an account that already granted this OAuth client consent before (e.g.
+            # for another channel under the same client_secret.json) gets a token missing
+            # refresh_token entirely -- it works once, then every later run needs a fresh
+            # browser login the moment the short-lived access token expires.
+            creds = flow.run_local_server(port=8080, prompt="consent")
         token_file.parent.mkdir(parents=True, exist_ok=True)
         token_file.write_text(creds.to_json(), encoding="utf-8")
     return build("youtube", "v3", credentials=creds)
