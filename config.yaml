@@ -111,13 +111,13 @@ upload:
   publish_at: ""              # ISO time, e.g. 2026-08-01T18:30:00+05:30; requires privacy_status=private
   upload_thumbnail: true
   upload_captions: true
-  # Reverted 2026-08-15: fanning the same render out to two channels posts byte-identical
-  # video/title/description/thumbnail from both, which trips YouTube's reused/duplicate-content
-  # enforcement across channels linked to the same creator -- this is the suspected cause of
-  # views dropping to ~0 on both channels right after this was enabled. Back to a single
-  # channel until the two channels are actually differentiated (distinct content, not fan-out).
+  # Switched 2026-08-23: both prior channels (youtube/token.json and
+  # youtube/token_new_channel.json) are tied up in a legal issue -- publishing moved to a
+  # brand-new account/channel (youtube/token_new_account.json). Single channel only (see the
+  # 2026-08-15 note this replaces: fanning the same render out to two channels at once trips
+  # YouTube's reused/duplicate-content enforcement and tanks views on both).
   token_files:
-    - "youtube/token.json"
+    - "youtube/token_new_account.json"
 
 instagram:
   # Official Meta Graph API (Instagram content publishing) — no browser bots, no scraping.

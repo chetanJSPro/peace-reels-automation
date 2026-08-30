@@ -52,20 +52,23 @@ jobs:
           PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
           YOUTUBE_CLIENT_SECRET_JSON: ${{ secrets.YOUTUBE_CLIENT_SECRET_JSON }}
           YOUTUBE_TOKEN_JSON: ${{ secrets.YOUTUBE_TOKEN_JSON }}
-          # Second channel's login (config.yaml's upload.token_files fans every upload out to
-          # both). Same OAuth app/client_secret.json as the first channel -- only the token
-          # differs, since that's what was produced by logging into the second account.
           YOUTUBE_TOKEN_JSON_NEW_CHANNEL: ${{ secrets.YOUTUBE_TOKEN_JSON_NEW_CHANNEL }}
+          # Newest account's login. Same OAuth app/client_secret.json as the older channels --
+          # only the token differs, since that's what was produced by logging into the new
+          # account. config.yaml's upload.token_files now points at this one exclusively
+          # (switched 2026-08-23: both prior channels are tied up in a legal issue).
+          YOUTUBE_TOKEN_JSON_NEW_ACCOUNT: ${{ secrets.YOUTUBE_TOKEN_JSON_NEW_ACCOUNT }}
         run: |
           mkdir -p youtube
           printf '%s' "$YOUTUBE_CLIENT_SECRET_JSON" > youtube/client_secret.json
           printf '%s' "$YOUTUBE_TOKEN_JSON" > youtube/token.json
           printf '%s' "$YOUTUBE_TOKEN_JSON_NEW_CHANNEL" > youtube/token_new_channel.json
+          printf '%s' "$YOUTUBE_TOKEN_JSON_NEW_ACCOUNT" > youtube/token_new_account.json
           {
             echo "PIXABAY_API_KEY=$PIXABAY_API_KEY"
             echo "PEXELS_API_KEY=$PEXELS_API_KEY"
             echo "YOUTUBE_CLIENT_SECRETS=youtube/client_secret.json"
-            echo "YOUTUBE_TOKEN_FILE=youtube/token.json"
+            echo "YOUTUBE_TOKEN_FILE=youtube/token_new_account.json"
           } > .env
 
       - name: Generate video and upload to YouTube
