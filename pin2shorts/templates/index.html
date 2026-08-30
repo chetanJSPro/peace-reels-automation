@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>pin2shorts — Pinterest → YouTube Shorts</title>
+<style>
+  :root{--bg:#0d0b14;--card:#171425;--line:#2a2438;--txt:#ece9f5;--dim:#a09bb5;--acc:#ff3d71;--ok:#3ddc97}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,sans-serif}
+  .wrap{max-width:960px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:26px;margin:0 0 4px}
+  h1 span{color:var(--acc)}
+  .sub{color:var(--dim);margin:0 0 24px;font-size:13.5px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:18px}
+  label{display:block;font-size:12.5px;color:var(--dim);margin:0 0 6px;text-transform:uppercase;letter-spacing:.06em}
+  textarea,input[type=text],input[type=number],select{width:100%;background:#100e1b;border:1px solid var(--line);color:var(--txt);border-radius:10px;padding:10px 12px;font:14px/1.4 ui-monospace,SFMono-Regular,Menlo,monospace}
+  textarea{min-height:130px;resize:vertical}
+  select{font-family:inherit}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-top:14px}
+  button{background:var(--acc);color:#fff;border:0;border-radius:10px;padding:11px 22px;font-weight:600;font-size:15px;cursor:pointer}
+  button:disabled{opacity:.5;cursor:default}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px}
+  .chk{display:flex;gap:8px;align-items:center;color:var(--dim);font-size:13.5px}
+  .chk input{width:auto}
+  #log{background:#0a0812;border:1px solid var(--line);border-radius:10px;padding:12px;height:190px;overflow:auto;font:12.5px/1.5 ui-monospace,Menlo,monospace;color:#b9b3cc;white-space:pre-wrap}
+  .out{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px}
+  .item{background:#100e1b;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .item video{width:100%;border-radius:8px;background:#000;aspect-ratio:9/16;object-fit:cover}
+  .item a{color:var(--txt);text-decoration:none;font-size:13px;display:block;margin-top:8px;word-break:break-all}
+  .badge{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;background:#2a2438;color:var(--dim);margin-top:6px}
+  .ok{color:var(--ok)}.fail{color:var(--acc)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  td,th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+  th{color:var(--dim);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+  .muted{color:var(--dim);font-size:12.5px}
+  .note{background:#241a1f;border:1px solid #4a2b33;border-radius:12px;padding:14px 16px;font-size:13.5px;color:#e8c9d1;margin-bottom:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>pin<span>2shorts</span></h1>
+  <p class="sub">Public Pinterest video pins → 1080×1920 Shorts-ready MP4 · ffmpeg: {{ ffmpeg }}</p>
+
+  <div class="note">
+    <b>Read this before you upload.</b> Most Pinterest videos are already somebody else's repost.
+    Raw re-uploads can get views, but they usually fail YouTube's <i>reused content</i> review
+    (so no monetization) and can collect copyright claims/strikes. Add real transformation —
+    your voice, your narration, your edit — or use footage you own / have written permission for.
+    See <code>PLAYBOOK.md</code> for the full plan.
+  </div>
+
+  <div class="card">
+    <label for="urls">Pinterest links (one per line — pin URLs, pin.it short links, or a board URL)</label>
+    <textarea id="urls" placeholder="https://www.pinterest.com/pin/123456789012345/
+https://pin.it/abc123XYZ"></textarea>
+
+    <div class="grid">
+      <div>
+        <label for="mode">Fit mode</label>
+        <select id="mode">
+          <option value="blur">blur backdrop (keeps full frame)</option>
+          <option value="crop">hard crop to 9:16</option>
+          <option value="stretch">stretch (distorts)</option>
+        </select>
+      </div>
+      <div>
+        <label for="max_duration">Max seconds</label>
+        <input id="max_duration" type="number" value="59" min="5" max="180" step="1">
+      </div>
+      <div>
+        <label for="watermark">Watermark / handle</label>
+        <input id="watermark" type="text" placeholder="@bhagtivideotop">
+      </div>
+      <div>
+        <label for="limit">Board limit (optional)</label>
+        <input id="limit" type="number" placeholder="20" min="1">
+      </div>
+    </div>
+
+    <div class="row">
+      <button id="go">Download &amp; render</button>
+      <label class="chk"><input type="checkbox" id="fade" checked> fade in/out</label>
+      <label class="chk"><input type="checkbox" id="skip_seen" checked> skip pins already downloaded</label>
+      <span class="muted" id="state"></span>
+    </div>
+  </div>
+
+  <div class="card" id="logcard" style="display:none">
+    <label>Progress</label>
+    <div id="log"></div>
+  </div>
+
+  <div class="card">
+    <div class="row" style="margin:0 0 14px">
+      <label style="margin:0">Rendered shorts ({{ shorts|length }})</label>
+      <a href="/zip"><button style="background:#2a2438">Download all (.zip)</button></a>
+      <a href="/csv"><button style="background:#2a2438">manifest.csv</button></a>
+    </div>
+    <div class="out">
+      {% for f in shorts %}
+      <div class="item">
+        <video src="/shorts/{{ f.name }}" controls preload="metadata"></video>
+        <a href="/shorts/{{ f.name }}" download>{{ f.name }}</a>
+        <span class="badge">{{ "%.1f"|format(f.stat().st_size/1048576) }} MB</span>
+      </div>
+      {% else %}
+      <p class="muted">Nothing yet — paste a link above and hit render.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  {% if rows %}
+  <div class="card">
+    <label>Recent activity</label>
+    <table>
+      <tr><th>When</th><th>Pin</th><th>Title</th><th>Status</th></tr>
+      {% for r in rows %}
+      <tr>
+        <td class="muted">{{ r.downloaded_at[5:16] }}</td>
+        <td class="muted">{{ r.pin_id }}</td>
+        <td>{{ (r.title or "—")[:40] }}</td>
+        <td class="{{ 'ok' if r.status=='rendered' else ('fail' if r.status=='failed' else 'muted') }}">{{ r.status }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let timer = null;
+
+$('go').addEventListener('click', async () => {
+  const body = new URLSearchParams({
+    urls: $('urls').value, mode: $('mode').value, max_duration: $('max_duration').value,
+    watermark: $('watermark').value, limit: $('limit').value,
+    fade: $('fade').checked ? 'on' : 'off', skip_seen: $('skip_seen').checked ? 'on' : 'off'
+  });
+  $('go').disabled = true; $('state').textContent = 'starting…';
+  $('logcard').style.display = 'block'; $('log').textContent = '';
+  const res = await fetch('/start', {method: 'POST', body});
+  if (!res.ok) { $('state').textContent = (await res.json()).error; $('go').disabled = false; return; }
+  const {job_id} = await res.json();
+  timer = setInterval(async () => {
+    const s = await (await fetch('/status/' + job_id)).json();
+    $('log').textContent = s.log.join('\n');
+    $('log').scrollTop = $('log').scrollHeight;
+    $('state').textContent = s.status === 'done' ? `done — ${s.done.length} rendered` : s.status;
+    if (s.status === 'done' || s.status === 'error') {
+      clearInterval(timer); $('go').disabled = false;
+      if (s.done.length) setTimeout(() => location.reload(), 1200);
+    }
+  }, 1000);
+});
+</script>
+</body>
+</html>

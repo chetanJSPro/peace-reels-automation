@@ -1,0 +1,24 @@
+# Config for the AI-Bhagwan Pinterest-repost pipeline (pin2shorts/).
+# Deliberately separate from config.yaml (the original-content meditation-Shorts pipeline):
+# a copyright claim or a "reused content" review triggered by this repost pipeline must not
+# touch the channel that already carries the original AI-narrated content.
+#
+# One-time setup before this can upload:
+#   1. In Google Cloud console (same project as youtube/client_secret.json is fine, or a new
+#      one), make sure the OAuth client is a "Desktop app" type, and the new channel's account
+#      is added as a test user if the app is in "Testing" publish status.
+#   2. Run once, locally, with a rendered clip already in pin2shorts/shorts/:
+#        python pin2shorts/publish.py --limit 1
+#      Because youtube/token_ai_bhagwan.json doesn't exist yet, this opens a browser for a
+#      one-time login — sign in with the Google account for the NEW channel. It then writes
+#      youtube/token_ai_bhagwan.json and every run after that is fully unattended.
+#      This step can only be done by you, interactively — it cannot run headless in CI.
+
+youtube_client_secrets: "youtube/client_secret.json"
+youtube_token_file: "youtube/token_ai_bhagwan.json"
+
+upload:
+  enabled: true
+  privacy_status: "public"
+  upload_thumbnail: true
+  upload_captions: false

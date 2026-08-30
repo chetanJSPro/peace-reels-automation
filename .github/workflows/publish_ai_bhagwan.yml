@@ -1,0 +1,87 @@
+name: AI Bhagwan Shorts automation
+
+# Separate pipeline from publish.yml: sources public Pinterest "AI <deity>" video pins
+# (AI-generated devotional art), renders them to Shorts, and publishes to a DIFFERENT
+# YouTube channel/token than the original-content pipeline. Kept on its own channel
+# deliberately -- see config.ai_bhagwan.yaml for why -- so a copyright claim or a
+# reused-content review on this repost pipeline can't touch the original channel.
+#
+# Requires a one-time, human, interactive step before this workflow can upload anything:
+# run `python pin2shorts/publish.py --limit 1` locally once to complete the OAuth login
+# for the new channel and produce youtube/token_ai_bhagwan.json, then add its contents as
+# the YOUTUBE_TOKEN_JSON_AI_BHAGWAN secret (see config.ai_bhagwan.yaml). Until that secret
+# exists, this workflow will still discover/render but every upload attempt will fail.
+on:
+  schedule:
+    # 3 runs/day, each publishing 1 video (run_pipeline.py defaults) = 3 videos/day.
+    - cron: "0 3 * * *"    # 08:30 IST
+    - cron: "0 11 * * *"   # 16:30 IST
+    - cron: "30 16 * * *"  # 22:00 IST
+  workflow_dispatch:
+    inputs:
+      render_limit:
+        description: "Max clips to render this run"
+        default: "2"
+      upload_limit:
+        description: "Max clips to upload this run"
+        default: "1"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ai-bhagwan-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install system dependencies (ffmpeg)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r pin2shorts/requirements.txt
+
+      - name: Restore credentials from secrets
+        env:
+          YOUTUBE_CLIENT_SECRET_JSON: ${{ secrets.YOUTUBE_CLIENT_SECRET_JSON }}
+          YOUTUBE_TOKEN_JSON_AI_BHAGWAN: ${{ secrets.YOUTUBE_TOKEN_JSON_AI_BHAGWAN }}
+        run: |
+          mkdir -p youtube
+          printf '%s' "$YOUTUBE_CLIENT_SECRET_JSON" > youtube/client_secret.json
+          printf '%s' "$YOUTUBE_TOKEN_JSON_AI_BHAGWAN" > youtube/token_ai_bhagwan.json
+
+      - name: Restore manifest/queue state (so dedupe survives across runs)
+        run: |
+          git config user.name "ai-bhagwan-bot"
+          git config user.email "actions@users.noreply.github.com"
+
+      - name: Discover + render + publish
+        working-directory: pin2shorts
+        run: |
+          python run_pipeline.py \
+            --render-limit "${{ github.event.inputs.render_limit || 2 }}" \
+            --upload-limit "${{ github.event.inputs.upload_limit || 1 }}"
+
+      - name: Commit dedupe state (manifest.csv, uploads.csv, queue files)
+        # These are .gitignore'd in pin2shorts/ (fine for a local/cron setup with a
+        # persistent disk) but this runner is thrown away after every run, so manifest.csv
+        # (pin dedupe) and uploads.csv (upload dedupe) MUST be committed back or every run
+        # would re-discover and re-upload the same pins. -f overrides the ignore for these
+        # specific state files only.
+        run: |
+          git add -f pin2shorts/manifest.csv pin2shorts/uploads.csv pin2shorts/queue.txt pin2shorts/queue.done.txt 2>/dev/null || true
+          git diff --cached --quiet || git commit -m "Auto: AI Bhagwan pipeline state"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push

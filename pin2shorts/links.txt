@@ -1,0 +1,3 @@
+# one Pinterest link per line — pin URLs, pin.it links, or board URLs
+# https://www.pinterest.com/pin/664281013778109217/
+# https://pin.it/abc123

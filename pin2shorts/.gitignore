@@ -1,0 +1,12 @@
+downloads/
+shorts/
+__pycache__/
+*.pyc
+manifest.csv
+uploads.csv
+queue.done.txt
+
+# secrets — never commit these
+client_secret.json
+token.json
+cookies.txt
