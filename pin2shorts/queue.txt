@@ -1,6 +1,4 @@
 # one Pinterest link per line
-https://www.pinterest.com/pin/4714774605899946/
-https://www.pinterest.com/pin/959126051878029362/
 https://www.pinterest.com/pin/614108099234577208/
 https://www.pinterest.com/pin/1046383294701798479/
 https://www.pinterest.com/pin/13088655163281822/
@@ -1034,3 +1032,15 @@ https://www.pinterest.com/pin/244249979787373879/
 https://www.pinterest.com/pin/7177680653310919/
 https://www.pinterest.com/pin/1115203926509093054/
 https://www.pinterest.com/pin/6122149489379316/
+https://www.pinterest.com/pin/922745411179081009/
+https://www.pinterest.com/pin/1046735138415602140/
+https://www.pinterest.com/pin/1133851643717320036/
+https://www.pinterest.com/pin/333899759905249553/
+https://www.pinterest.com/pin/1109152214521211795/
+https://www.pinterest.com/pin/420945896447172172/
+https://www.pinterest.com/pin/655062708350188099/
+https://www.pinterest.com/pin/755338168798109070/
+https://www.pinterest.com/pin/755338168798109042/
+https://www.pinterest.com/pin/755338168798107348/
+https://www.pinterest.com/pin/1035827983074239243/
+https://www.pinterest.com/pin/713468766016549310/
