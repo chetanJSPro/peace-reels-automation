@@ -1,6 +1,4 @@
 # one Pinterest link per line
-https://www.pinterest.com/pin/1002613935815380052/
-https://www.pinterest.com/pin/246572148347276583/
 https://www.pinterest.com/pin/2251868559226257/
 https://www.pinterest.com/pin/814518282648903872/
 https://www.pinterest.com/pin/582934745567452675/
@@ -1512,3 +1510,22 @@ https://www.pinterest.com/pin/e1_AfqPShwsngb6bKitFXt-36BS3QNIFI5_Fa2A-ImNmgjIS2G
 https://www.pinterest.com/pin/e1_AfqPShxIWU-OBjSi2dZimdafTxYQPSmfX1H1WhB69fPtjgClYGGS/
 https://www.pinterest.com/pin/e1_AfqPShx7bgmxI6-L2JcQeGPEFHaZRjWPqebHQ9qLZKrR0bs9Sbpo/
 https://www.pinterest.com/pin/e1_AfqPShwOFO0qKyAaMnbcoGHw6j_lAHGHpPMe9-otUNfx1GCsV1fljw/
+https://www.pinterest.com/pin/e1_AfqPShzdbe_-n0tbrm3uWN9CK9mM9tr2JxsONt0DPGDyo8a4ngG_/
+https://www.pinterest.com/pin/e1_AfqPShxrv4ghlGLVxdPU9uvo9Zz-gqO9r8buVNwbUkhZcHBRYFUP/
+https://www.pinterest.com/pin/e1_AfqPShxEH2Cs264GXosSmweHi9aX_udr27XFaBXcTSNyffn2VzcE/
+https://www.pinterest.com/pin/e1_AfqPShzEICVh2o88ooqcqHModMzcdZwwvLDMTZqpdjKyElhfs7sx/
+https://www.pinterest.com/pin/e1_AfqPShztO0QLMTFcD55AZye7G9lia8YDaDfCZWEfW-YtJDA-sx4vOA/
+https://www.pinterest.com/pin/e1_AfqPShy7CCohkB_SfIQu4l1z7MXHuWjlaZv-pF4OI2qmoXKRY0T91A/
+https://www.pinterest.com/pin/e1_AfqPShzr2nAMnuz4RElofPrEyHNGus7JOtteUJGwbbXTaQhfnT12/
+https://www.pinterest.com/pin/e1_AfqPShwXnBmaNCzxeaTUb_9D1llANgtLdUaNqpe1VUhZOkDx8DSOtg/
+https://www.pinterest.com/pin/e1_AfqPShy8IQJ_sUOYfSeXg_ctYy9msqSYA87ffp4omg2I1rtacS2N/
+https://www.pinterest.com/pin/e1_AfqPShxMp6JjgCOlaa5HT57u4ng0waQawm9cy9ZKOk7u3r_j6nfy/
+https://www.pinterest.com/pin/e1_AfqPShxX11PdwV7PaNI3K6uuADawm_bvTD0AsxENR7p98ywGzqkOGQ/
+https://www.pinterest.com/pin/e1_AfqPShwfmRV6s1clOhT7PRn5rPc9CCgXHLSIHygMpg2qyi8pPXxi/
+https://www.pinterest.com/pin/e1_AfqPShwsaRJIHQBTQ_vahpVuiNbLzHOz8Qi8MiQi8WbPQbvm_izs/
+https://www.pinterest.com/pin/e1_AfqPShw45i5Y5rDtStXNIH7PM7DHz0CXktR6hgGchhCHEgx60EGU/
+https://www.pinterest.com/pin/e1_AfqPShyFNy6_kvKEhkJXS9wIxOK1SqQfEpb1aQfs3ZoJ8_0yBvsF/
+https://www.pinterest.com/pin/e1_AfqPShw7IG2tIoIUUU24hDhDiOri_uNSb2MsBTfVrjvBV9B1pich/
+https://www.pinterest.com/pin/e1_AfqPShyKVMW3KO7aEdHqQm7wvHlCWclil-U0boeFdoxMcWM_4EdFZw/
+https://www.pinterest.com/pin/e1_AfqPShy1lA1nVKdE6K4D3dijyCCrTR1lykIrq1m0IXdopLE52V5tlA/
+https://www.pinterest.com/pin/e1_AfqPShxrM8_Dam2qFZixIM7fdc2DbI0N-M4VxlSUXMEsTYAnH0jSbg/
