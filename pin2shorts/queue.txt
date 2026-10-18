@@ -1,6 +1,4 @@
 # one Pinterest link per line
-https://www.pinterest.com/pin/582934745567452675/
-https://www.pinterest.com/pin/856880266642413928/
 https://www.pinterest.com/pin/4714774603409697/
 https://www.pinterest.com/pin/786441153727653466/
 https://www.pinterest.com/pin/31454897393764337/
@@ -1535,3 +1533,19 @@ https://www.pinterest.com/pin/e1_AfqPShw70twUmXgxUcaxVEEz8aJ1arjR5TugQfhevK_drpZ
 https://www.pinterest.com/pin/e1_AfqPShy26q5Cj8q47-6hrUEn7zg9pTspRhkcvSrKWYb_iE4fDECh/
 https://www.pinterest.com/pin/e1_AfqPShzlDrLfXBouL4XDWV3YVZ_kRf2vVMZUB1_5xctNrGnZIWxY/
 https://www.pinterest.com/pin/e1_AfqPShwMXHerp-xo4m9a6QCmgK9rY7HxiMo8t_azCozyhOyEm_Co/
+https://www.pinterest.com/pin/e1_AfqPShyR1-CKIdtSM9AixDOmxVu1PxUEANWrmc51BcTxMeCuSZYD_g/
+https://www.pinterest.com/pin/e1_AfqPShxvxJ4-tuTyaNZ5WcQ69kwMA6gJaDqZB1adkJUDAwb_tvdk/
+https://www.pinterest.com/pin/e1_AfqPShzwIfOQavxw86ETIglFymL-SVOmQa86Pid8y70A1Uk8Ygy5QA/
+https://www.pinterest.com/pin/e1_AfqPShywtyFGORbWBe4UpPPYpWppY0PPXvPtU_2g6NL9UpB_Uts-/
+https://www.pinterest.com/pin/e1_AfqPShxsHvfjWO1y5uNqn01BoqJJ3F5PIxD9e7dAN0w9m7bNnaXmig/
+https://www.pinterest.com/pin/e1_AfqPShzC0V5t09clCt_TNJuyCrnudxo5IOkGBUghlaWgnE4dQ0Vt/
+https://www.pinterest.com/pin/e1_AfqPShzjQdxXkf0VbWAlmAu7CGvW5PkfP8ZTDG0-oGCUS5OtkYcP/
+https://www.pinterest.com/pin/e1_AfqPShxlKKQfPRbk9xeIpBzc7DR_MMLo2wwI4IbjOyEc9DqVCkl0wQ/
+https://www.pinterest.com/pin/e1_AfqPShyGNP8We4mSKTdS5Oax6cyzJmiVCRj--dI8jgc7XkYOoK2WlA/
+https://www.pinterest.com/pin/e1_AfqPShwfpM5Du3JKI-7pQujk4r596ko2qeThLWmO_Yo9iERWrNYHcw/
+https://www.pinterest.com/pin/e1_AfqPShw4ai1SFm7I3u5iioUfgXLiX-JxKdbcEzxNsMSvxCq_wl6HLQ/
+https://www.pinterest.com/pin/e1_AfqPShxYT4DCJ7CTve3dsQdfWIxhp_kI-yRHeVikTlXZ3MyiWtFG/
+https://www.pinterest.com/pin/e1_AfqPShzdaGA7ORdnaVMST8k8psi4rXBlK-w_cqQjzvCakMUaPre99Q/
+https://www.pinterest.com/pin/e1_AfqPShyE6_puCSoy0LnUZyV7_HtMnfKxFeowTMR2V4blT6_q8kLo/
+https://www.pinterest.com/pin/e1_AfqPShyHSSEXRmDjpICBt4Jb6HGoJPtMdw8Ts709GAcdk4PsGzgn/
+https://www.pinterest.com/pin/e1_AfqPShwVy-SnrWH2JWwelAIE-ima3lQeSHsfI1VNKl20F7pPokcsSg/
