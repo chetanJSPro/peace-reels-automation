@@ -1,6 +1,4 @@
 # one Pinterest link per line
-https://www.pinterest.com/pin/1107322627159028920/
-https://www.pinterest.com/pin/838021443210356534/
 https://www.pinterest.com/pin/592856738492688340/
 https://www.pinterest.com/pin/1007047166696065899/
 https://www.pinterest.com/pin/1048705463251091415/
@@ -1837,3 +1835,12 @@ https://www.pinterest.com/pin/e1_AfqPShwu6avn6f0K0ap9IloLNwLZUBGRjLnAW7clou_kHky
 https://www.pinterest.com/pin/e1_AfqPShyIVaEsdC3zwJmADRRjm258M1Jfm2V7TojqhWFSzoJ-rRxD2Q/
 https://www.pinterest.com/pin/e1_AfqPShzWiz_kb_YKNVWVacMwPzE8Ll3IVrQQ4efGk8Zm3JvA7Bpm/
 https://www.pinterest.com/pin/e1_AfqPShxU33OYye9Wd2VXnVhGmbsW5CF8keembZJMAFwcdIbZMOL3/
+https://www.pinterest.com/pin/e1_AfqPShzinU9NKh7rQKinRfBzndwA8W2tSbbn5sN77bSAdkFniFDY-A/
+https://www.pinterest.com/pin/e1_AfqPShxOOJlOxDgVuhv6ym7FOUNE0cSLZw7ae19tczhgJJrbsh_q/
+https://www.pinterest.com/pin/e1_AfqPShyr-8N7xXGvittsTvZ8B4mQkyE8PGhZH0K0SDiBxVWQHT3eyg/
+https://www.pinterest.com/pin/e1_AfqPShyig05S7PIoC7vGkLo2YV45yJ-iNqz-SRvs81F943lfkPkr/
+https://www.pinterest.com/pin/e1_AfqPShzd4Yg-yvhRjWCvYWYwH7OQ-fPG1o3hdC3X5F396SRsakld/
+https://www.pinterest.com/pin/e1_AfqPShx1vxY8gqa64F0hV9wAU-wZ87l0JJC1nf9xgZvx_JZdf424kw/
+https://www.pinterest.com/pin/e1_AfqPShxMqxjjtuZxO_JwjkOz1CC5Q4nwkj15LIEpHH0YznfLXLnemw/
+https://www.pinterest.com/pin/e1_AfqPShxOTjkVY0ZN_qHT3RpZ-s9WJd7jQP1KjNX8Am73DkxDXx69YA/
+https://www.pinterest.com/pin/e1_AfqPShydqN3Chb7snSMeB2g2SnRFUdRW6NekuatkDDlppRo29Ez4Ww/
