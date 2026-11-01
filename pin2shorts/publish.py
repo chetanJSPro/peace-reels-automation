@@ -50,6 +50,9 @@ def publish_pending(limit: int | None = None, dry_run: bool = False) -> int:
         return 0
 
     pending = [r for r in rows if r.get("uploaded", "no").lower() != "yes"]
+    # CI runners are thrown away after each run, so rows left pending by an earlier run have
+    # no file here. Drop them before applying the limit or they use up every upload slot.
+    pending = [r for r in pending if (BASE / "shorts" / r["file"]).exists()]
     if limit:
         pending = pending[:limit]
     if not pending:

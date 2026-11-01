@@ -117,7 +117,9 @@ def clean(text: str) -> str:
 
 
 def make_metadata(row: dict, cfg: dict) -> dict:
-    title = clean(row.get("title", "")) or "Bhakti video"
+    title = clean(row.get("title", ""))
+    if not title or re.fullmatch(r"Pinterest video #\d+", title):
+        title = "Bhakti video"
     if len(title) > 70:
         title = title[:67].rsplit(" ", 1)[0] + "…"
     tags = [t.lstrip("#").lower() for t in cfg["hashtags"]]
