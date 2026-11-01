@@ -20,8 +20,8 @@ on:
   workflow_dispatch:
     inputs:
       render_limit:
-        description: "Max clips to render this run"
-        default: "2"
+        description: "Clips to render this run"
+        default: "1"
       upload_limit:
         description: "Max clips to upload this run"
         default: "1"
@@ -71,7 +71,7 @@ jobs:
         working-directory: pin2shorts
         run: |
           python run_pipeline.py \
-            --render-limit "${{ github.event.inputs.render_limit || 2 }}" \
+            --render-limit "${{ github.event.inputs.render_limit || 1 }}" \
             --upload-limit "${{ github.event.inputs.upload_limit || 1 }}"
 
       - name: Commit dedupe state (manifest.csv, uploads.csv, queue files)

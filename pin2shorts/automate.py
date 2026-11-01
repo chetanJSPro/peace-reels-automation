@@ -174,24 +174,30 @@ def run_once(cfg: dict, render_limit: int | None = None) -> int:
     if not urls:
         print("queue empty")
         return 0
-    if render_limit:
-        urls = urls[:render_limit]
 
     def log(msg=""):
         print(msg, flush=True)
 
-    rows = P.process(
-        urls,
-        mode=cfg["mode"],
-        max_duration=float(cfg["max_duration"]),
-        watermark=cfg.get("watermark") or None,
-        fade=bool(cfg.get("fade", True)),
-        limit=cfg.get("limit"),
-        skip_seen=bool(cfg.get("skip_seen", True)),
-        log=log,
-    )
+    # Nearly half of pins have no video, so render_limit counts clips rendered, not pins
+    # tried, or a run of bad pins leaves nothing to upload. Capped so a dead extractor
+    # can't burn through the whole queue.
+    rows, tried = [], []
+    for url in urls[:render_limit * 20] if render_limit else urls:
+        rows += P.process(
+            [url],
+            mode=cfg["mode"],
+            max_duration=float(cfg["max_duration"]),
+            watermark=cfg.get("watermark") or None,
+            fade=bool(cfg.get("fade", True)),
+            limit=cfg.get("limit"),
+            skip_seen=bool(cfg.get("skip_seen", True)),
+            log=log,
+        )
+        tried.append(url)
+        if render_limit and sum(1 for r in rows if r.get("status") == "rendered") >= render_limit:
+            break
     write_uploads(rows, cfg)
-    drain([u for u in urls])
+    drain(tried)
     ok = sum(1 for r in rows if r.get("status") == "rendered")
     print(f"\n{ok}/{len(rows)} rendered. Files in {P.OUT_DIR}")
     return 0
